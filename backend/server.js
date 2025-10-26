@@ -112,11 +112,9 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 //Mount routers
 const hotels = require('./routes/hotels');
 const auth = require('./routes/auth');
-const bookings = require('./routes/bookings');
 
 app.use('/api/v1/auth', auth);
 app.use('/api/v1/hotels', hotels);
-app.use('/api/v1/bookings', bookings);
 
 // Generic error handler - return JSON instead of HTML on errors
 app.use((err, req, res, next) => {
