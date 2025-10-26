@@ -1,0 +1,334 @@
+{
+  "info": {
+    "name": "Hotel Booking API - Authentication Tests",
+    "_postman_id": "hotel-booking-auth-tests",
+    "description": "Complete API tests for Basic Auth and Google OAuth authentication",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Basic Authentication",
+      "item": [
+        {
+          "name": "1. Register New User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"tel\": \"0812345678\",\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/v1/auth/register",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "v1", "auth", "register"]
+            },
+            "description": "Register a new user with name, tel, email, and password"
+          },
+          "response": []
+        },
+        {
+          "name": "2. Login with Email & Password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Save token for subsequent requests",
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.token) {",
+                  "    pm.environment.set(\"auth_token\", jsonData.token);",
+                  "    pm.environment.set(\"user_id\", jsonData._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/v1/auth/login",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "v1", "auth", "login"]
+            },
+            "description": "Login with email and password. Returns JWT token."
+          },
+          "response": []
+        },
+        {
+          "name": "3. Get Current User (Protected)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "description": "JWT token from login/register"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/v1/auth/me",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "v1", "auth", "me"]
+            },
+            "description": "Get current authenticated user details. Requires valid JWT token."
+          },
+          "response": []
+        },
+        {
+          "name": "4. Logout",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/v1/auth/logout",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "v1", "auth", "logout"]
+            },
+            "description": "Logout user by clearing the auth cookie"
+          },
+          "response": []
+        },
+        {
+          "name": "5. Register Admin User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Admin User\",\n  \"tel\": \"0898765432\",\n  \"email\": \"admin@example.com\",\n  \"password\": \"admin123\",\n  \"role\": \"admin\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/v1/auth/register",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "v1", "auth", "register"]
+            },
+            "description": "Register an admin user (role: admin)"
+          },
+          "response": []
+        },
+        {
+          "name": "6. Login - Invalid Credentials",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"wrongpassword\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/v1/auth/login",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "v1", "auth", "login"]
+            },
+            "description": "Test login with invalid credentials - Should return 401 error"
+          },
+          "response": []
+        },
+        {
+          "name": "7. Register - Duplicate Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Another User\",\n  \"tel\": \"0823456789\",\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/v1/auth/register",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "v1", "auth", "register"]
+            },
+            "description": "Test registration with duplicate email - Should return error"
+          },
+          "response": []
+        },
+        {
+          "name": "8. Register - Invalid Phone",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test User\",\n  \"tel\": \"123\",\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/v1/auth/register",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "v1", "auth", "register"]
+            },
+            "description": "Test registration with invalid phone number - Should return validation error"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Google OAuth",
+      "item": [
+        {
+          "name": "1. Initiate Google Login",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/v1/auth/google",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "v1", "auth", "google"]
+            },
+            "description": "IMPORTANT: This will redirect to Google's login page.\n\nIn Postman:\n1. Click Send\n2. Copy the redirect URL from the response\n3. Paste it in your browser\n4. Complete Google authentication\n5. You'll be redirected back with a token\n\nNote: This endpoint should be opened in a browser, not called via API directly."
+          },
+          "response": []
+        },
+        {
+          "name": "2. Google OAuth Callback",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/v1/auth/google/callback",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "v1", "auth", "google", "callback"]
+            },
+            "description": "This endpoint is called automatically by Google after authentication.\nYou don't need to call this directly.\n\nGoogle will append authentication codes as query parameters."
+          },
+          "response": []
+        },
+        {
+          "name": "3. Google OAuth Failure",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/v1/auth/google/failure",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "v1", "auth", "google", "failure"]
+            },
+            "description": "This endpoint is called if Google authentication fails.\nReturns error message."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Hotel Operations (Requires Auth)",
+      "item": [
+        {
+          "name": "1. Get All Hotels",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/v1/hotels",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "v1", "hotels"]
+            },
+            "description": "Get list of all available hotels"
+          },
+          "response": []
+        },
+        {
+          "name": "2. Create Booking (Authenticated)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "description": "JWT token from login"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookingDate\": \"2025-11-15\",\n  \"numOfNights\": 2\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/v1/hotels/:hotelId/bookings",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "v1", "hotels", ":hotelId", "bookings"],
+              "variable": [
+                {
+                  "key": "hotelId",
+                  "value": "HOTEL_ID_HERE"
+                }
+              ]
+            },
+            "description": "Create a new booking for a hotel (max 3 nights, max 3 bookings per user)"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api/v1"
+    }
+  ]
+}

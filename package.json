@@ -16,7 +16,7 @@
   "main": "server.js",
   "scripts": {
     "test": "newman run test7.json",
-    "dev": "cd vacq && nodemon server.js",
+    "dev": "cd backend && nodemon server.js",
     "start": "cd vacq && node server.js"
   },
   "dependencies": {
