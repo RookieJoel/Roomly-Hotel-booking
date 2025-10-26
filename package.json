@@ -1,0 +1,40 @@
+{
+  "name": "vacq",
+  "version": "1.0.0",
+  "description": "[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/WAy1mmxJ)",
+  "homepage": "https://github.com/2110503-68CP/a-4-RookieJoel#readme",
+  "bugs": {
+    "url": "https://github.com/2110503-68CP/a-4-RookieJoel/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/2110503-68CP/a-4-RookieJoel.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "test": "newman run test7.json",
+    "dev": "cd vacq && nodemon server.js",
+    "start": "cd vacq && node server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "express-mongo-sanitize": "^2.2.0",
+    "express-rate-limit": "^8.1.0",
+    "express-xss-sanitizer": "^2.0.1",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.18.0",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}

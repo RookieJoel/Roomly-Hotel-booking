@@ -1,0 +1,12 @@
+
+node_modules/
+dist/
+.env
+.DS_Store
+coverage/
+.idea/
+.vscode/
+*.log
+# Snyk Security Extension - AI Rules (auto-generated)
+.github/instructions/snyk_rules.instructions.md
+backend/config/config.env
