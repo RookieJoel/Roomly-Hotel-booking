@@ -37,6 +37,11 @@ const UserSchema = new mongoose.Schema({
         minlength: 6,
         select: false
     },
+    googleId: {
+        type: String,
+        unique: true,
+        sparse: true  // Allows null values while maintaining uniqueness for non-null values
+    },
     resetpasswordToken: String,
     resetpasswordExpire: Date,
     createdAt: {
@@ -47,6 +52,10 @@ const UserSchema = new mongoose.Schema({
 
 //encrypt password using bcrypt
 UserSchema.pre('save', async function(next) {
+    // Only hash password if it has been modified (or is new)
+    if (!this.isModified('password')) {
+        return next();
+    }
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
     next();

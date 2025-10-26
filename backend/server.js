@@ -9,14 +9,18 @@ const {xss} = require('express-xss-sanitizer');
 const rateLimit = require('express-rate-limit');
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
+const passport = require('passport');
+
 //load env vars
 dotenv.config({ path: './config/config.env' });
-
 
 //Connect to database
 connectDB();
 
 const app = express();
+
+// Passport config
+require('./config/passport')(passport);
 
 //Enable CORS
 app.use(cors({
@@ -26,6 +30,9 @@ app.use(cors({
 
 //Body parser
 app.use(express.json());
+
+// Initialize Passport
+app.use(passport.initialize());
 
 //Sanitize data (wrap to avoid throwing when req.query is a getter-only property)
 app.use((req, res, next) => {

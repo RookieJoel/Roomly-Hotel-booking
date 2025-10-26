@@ -114,4 +114,27 @@ exports.logout = async (req, res, next) => {
     success: true,
     data: {},
   });
-}
+};
+
+//@desc  Google OAuth Success Handler
+//@route GET /api/v1/auth/google/callback (handled by passport)
+//@access Public
+exports.googleAuthCallback = async (req, res) => {
+  try {
+    // req.user is set by passport after successful authentication
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        msg: "Google authentication failed"
+      });
+    }
+    
+    sendTokenResponse(req.user, 200, res);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      success: false,
+      msg: "Server error during Google authentication"
+    });
+  }
+};
