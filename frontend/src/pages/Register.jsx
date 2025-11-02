@@ -191,7 +191,7 @@ const Register = ({ setUser }) => {
         <button 
           type="button" 
           className="btn btn-google btn-block"
-          onClick={() => { window.location.href = 'http://localhost:5000/api/v1/auth/google'; }}
+          onClick={() => { window.location.href = 'http://localhost:8080/api/v1/auth/google'; }}
         >
           <FaGoogle /> Continue with Google
         </button>

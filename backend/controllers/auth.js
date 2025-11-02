@@ -121,14 +121,21 @@ exports.logout = async (req, res, next) => {
 //@access Public
 exports.googleAuthCallback = async (req, res) => {
   try {
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    
+    console.log('=== Google OAuth Callback ===');
+    console.log('User:', req.user ? req.user.email : 'No user');
+    console.log('Frontend URL:', frontendUrl);
+    
     // req.user is set by passport after successful authentication
     if (!req.user) {
-      // Redirect to frontend callback with error
-      return res.redirect('http://localhost:8080/auth/google/callback?error=authentication_failed');
+      console.log('❌ No user found');
+      return res.redirect(`${frontendUrl}/auth/google/callback?error=authentication_failed`);
     }
 
     // Generate token for the user
     const token = req.user.getSignedJwtToken();
+    console.log('✅ Token generated');
 
     // Build user data and encode it for URL
     const userData = {
@@ -139,10 +146,13 @@ exports.googleAuthCallback = async (req, res) => {
     };
 
     const encoded = encodeURIComponent(JSON.stringify(userData));
-    const redirectUrl = `http://localhost:8080/auth/google/callback?googleAuth=true&data=${encoded}`;
+    const redirectUrl = `${frontendUrl}/auth/google/callback?googleAuth=true&data=${encoded}`;
+    
+    console.log('🔄 Redirecting to:', redirectUrl.substring(0, 100) + '...');
     return res.redirect(redirectUrl);
   } catch (err) {
-    console.error('Error during Google callback:', err);
-    return res.redirect('http://localhost:8080/auth/google/callback?error=server_error');
+    console.error('❌ Error during Google callback:', err);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    return res.redirect(`${frontendUrl}/auth/google/callback?error=server_error`);
   }
 };
