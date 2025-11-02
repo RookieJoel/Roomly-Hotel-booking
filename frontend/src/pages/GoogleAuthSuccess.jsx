@@ -32,12 +32,12 @@ const GoogleAuthSuccess = ({ setUser }) => {
           const { token, name, email, _id, tel, role } = userData;
           console.log('Extracted values - token:', token, 'name:', name, 'email:', email, '_id:', _id, 'tel:', tel, 'role:', role);
 
-          // Save token and minimal user to localStorage
+          // Save token and user (including role) to localStorage
           localStorage.setItem('token', token);
-          localStorage.setItem('user', JSON.stringify({ name, email, _id }));
+          localStorage.setItem('user', JSON.stringify({ name, email, _id, role }));
 
-          // Update user state
-          setUser({ name, email, _id });
+          // Update user state (include role so Navbar shows admin links)
+          setUser({ name, email, _id, role });
 
           // If tel is missing or default, redirect to complete profile
           const needsComplete = !tel || tel === '0000000000' || tel === 'null';

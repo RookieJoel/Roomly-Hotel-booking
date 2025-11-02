@@ -11,6 +11,10 @@ const BookingSchema = new mongoose.Schema({
         min: [1, 'Minimum booking is 1 night'],
         max: [3, 'Maximum booking is 3 nights']
     },
+    checkoutDate: {
+        type: Date,
+        required: true
+    },
     user : {
         type: mongoose.Schema.ObjectId,
         ref: 'User',

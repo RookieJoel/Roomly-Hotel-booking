@@ -45,8 +45,9 @@ const CompleteProfile = ({ setUser }) => {
       const res = await authAPI.updateProfile(form);
       if (res.data && res.data.success) {
         const updated = res.data.data;
-        localStorage.setItem('user', JSON.stringify({ name: updated.name, email: updated.email, _id: updated._id }));
-        setUser({ name: updated.name, email: updated.email, _id: updated._id });
+        const userToStore = { name: updated.name, email: updated.email, _id: updated._id, role: updated.role || 'user' };
+        localStorage.setItem('user', JSON.stringify(userToStore));
+        setUser(userToStore);
         toast.success('Profile updated');
         navigate('/hotels');
       } else {

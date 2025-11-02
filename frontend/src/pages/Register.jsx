@@ -61,10 +61,18 @@ const Register = ({ setUser }) => {
         
         // Save to localStorage
         localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify({ name: userName, email: userEmail, _id }));
-        
-        // Update user state
-        setUser({ name: userName, email: userEmail, _id });
+        // Fetch complete user (to get role) then save
+        try {
+          const meResp = await authAPI.getMe();
+          const me = meResp.data && meResp.data.data ? meResp.data.data : { name: userName, email: userEmail, _id };
+          const userToStore = { name: me.name || userName, email: me.email || userEmail, _id: me._id || _id, role: me.role || role || 'user' };
+          localStorage.setItem('user', JSON.stringify(userToStore));
+          setUser(userToStore);
+        } catch (err) {
+          // fallback
+          localStorage.setItem('user', JSON.stringify({ name: userName, email: userEmail, _id }));
+          setUser({ name: userName, email: userEmail, _id });
+        }
         
         toast.success('Registration successful!');
         navigate('/hotels');
