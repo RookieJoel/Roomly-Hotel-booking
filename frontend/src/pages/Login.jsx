@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaEnvelope, FaLock } from 'react-icons/fa';
+import { FaEnvelope, FaLock, FaGoogle } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { authAPI } from '../utils/api';
 import './Auth.css';
@@ -20,6 +20,11 @@ const Login = ({ setUser }) => {
       ...formData,
       [e.target.name]: e.target.value,
     });
+  };
+
+  const handleGoogleLogin = () => {
+    // Redirect to backend Google OAuth endpoint
+    window.location.href = 'http://localhost:5000/api/v1/auth/google';
   };
 
   const handleSubmit = async (e) => {
@@ -101,6 +106,18 @@ const Login = ({ setUser }) => {
             {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
+
+        <div className="auth-divider">
+          <span>OR</span>
+        </div>
+
+        <button 
+          type="button" 
+          className="btn btn-google btn-block"
+          onClick={handleGoogleLogin}
+        >
+          <FaGoogle /> Continue with Google
+        </button>
 
         <p className="auth-footer">
           Don't have an account? <Link to="/register">Register here</Link>

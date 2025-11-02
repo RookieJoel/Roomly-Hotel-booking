@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaUser, FaEnvelope, FaLock, FaPhone } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaLock, FaPhone, FaGoogle, FaUserTag } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { authAPI } from '../utils/api';
 import './Auth.css';
@@ -12,11 +12,12 @@ const Register = ({ setUser }) => {
     password: '',
     confirmPassword: '',
     tel: '',
+    role: 'user',
   });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const { name, email, password, confirmPassword, tel } = formData;
+  const { name, email, password, confirmPassword, tel, role } = formData;
 
   const handleChange = (e) => {
     setFormData({
@@ -51,7 +52,8 @@ const Register = ({ setUser }) => {
         name, 
         email, 
         password, 
-        tel 
+        tel,
+        role
       });
       
       if (response.data.success) {
@@ -112,35 +114,51 @@ const Register = ({ setUser }) => {
             />
           </div>
 
-          <div className="form-group">
-            <label htmlFor="tel">
-              <FaPhone /> Phone Number
-            </label>
-            <input
-              type="tel"
-              id="tel"
-              name="tel"
-              value={tel}
-              onChange={handleChange}
-              placeholder="Enter your phone number"
-              required
-            />
-          </div>
+            <div className="form-group">
+              <label htmlFor="tel">
+                <FaPhone /> Phone Number
+              </label>
+              <input
+                type="tel"
+                id="tel"
+                name="tel"
+                value={tel}
+                onChange={handleChange}
+                placeholder="Enter your phone number"
+                required
+              />
+            </div>
 
-          <div className="form-group">
-            <label htmlFor="password">
-              <FaLock /> Password
-            </label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={password}
-              onChange={handleChange}
-              placeholder="Enter your password"
-              required
-            />
-          </div>
+            <div className="form-group">
+              <label htmlFor="role">
+                <FaUserTag /> Role
+              </label>
+              <select
+                id="role"
+                name="role"
+                value={role}
+                onChange={handleChange}
+                required
+              >
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="password">
+                <FaLock /> Password
+              </label>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                value={password}
+                onChange={handleChange}
+                placeholder="Enter your password"
+                required
+              />
+            </div>
 
           <div className="form-group">
             <label htmlFor="confirmPassword">
@@ -165,6 +183,18 @@ const Register = ({ setUser }) => {
             {loading ? 'Creating Account...' : 'Register'}
           </button>
         </form>
+
+        <div className="auth-divider">
+          <span>OR</span>
+        </div>
+
+        <button 
+          type="button" 
+          className="btn btn-google btn-block"
+          onClick={() => { window.location.href = 'http://localhost:5000/api/v1/auth/google'; }}
+        >
+          <FaGoogle /> Continue with Google
+        </button>
 
         <p className="auth-footer">
           Already have an account? <Link to="/login">Login here</Link>

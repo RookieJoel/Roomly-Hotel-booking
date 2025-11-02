@@ -123,18 +123,26 @@ exports.googleAuthCallback = async (req, res) => {
   try {
     // req.user is set by passport after successful authentication
     if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        msg: "Google authentication failed"
-      });
+      // Redirect to frontend callback with error
+      return res.redirect('http://localhost:8080/auth/google/callback?error=authentication_failed');
     }
-    
-    sendTokenResponse(req.user, 200, res);
+
+    // Generate token for the user
+    const token = req.user.getSignedJwtToken();
+
+    // Build user data and encode it for URL
+    const userData = {
+      _id: req.user._id,
+      name: req.user.name,
+      email: req.user.email,
+      token: token
+    };
+
+    const encoded = encodeURIComponent(JSON.stringify(userData));
+    const redirectUrl = `http://localhost:8080/auth/google/callback?googleAuth=true&data=${encoded}`;
+    return res.redirect(redirectUrl);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({
-      success: false,
-      msg: "Server error during Google authentication"
-    });
+    console.error('Error during Google callback:', err);
+    return res.redirect('http://localhost:8080/auth/google/callback?error=server_error');
   }
 };

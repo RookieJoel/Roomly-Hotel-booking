@@ -11,6 +11,7 @@ import Register from './pages/Register';
 import Home from './pages/Home';
 import Hotels from './pages/Hotels';
 import Bookings from './pages/Bookings';
+import GoogleAuthSuccess from './pages/GoogleAuthSuccess';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -45,6 +46,10 @@ function App() {
           <Route 
             path="/register" 
             element={user ? <Navigate to="/hotels" /> : <Register setUser={setUser} />} 
+          />
+          <Route 
+            path="/auth/google/callback" 
+            element={<GoogleAuthSuccess setUser={setUser} />} 
           />
           <Route 
             path="/hotels" 
