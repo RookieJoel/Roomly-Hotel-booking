@@ -32,6 +32,34 @@ exports.register = async (req, res, next) => {
   }
 };
 
+// @desc   Update user profile (partial)
+// @route  PUT /api/v1/auth/update
+// @access Private
+exports.updateProfile = async (req, res) => {
+  try {
+    const userId = req.user && req.user._id;
+    if (!userId) {
+      return res.status(401).json({ success: false, msg: 'Not authorized' });
+    }
+
+    const { name, tel, role } = req.body;
+    const updates = {};
+    if (typeof name !== 'undefined') updates.name = name;
+    if (typeof tel !== 'undefined') updates.tel = tel;
+    if (typeof role !== 'undefined') updates.role = role;
+
+    const user = await User.findByIdAndUpdate(userId, updates, {
+      new: true,
+      runValidators: true,
+    });
+
+    return res.status(200).json({ success: true, data: user });
+  } catch (err) {
+    console.error('Error updating profile:', err);
+    return res.status(500).json({ success: false, msg: 'Server error' });
+  }
+};
+
 exports.login = async (req, res, next) => {
   try {
   const { email, password } = req.body;
@@ -137,11 +165,13 @@ exports.googleAuthCallback = async (req, res) => {
     const token = req.user.getSignedJwtToken();
     console.log('✅ Token generated');
 
-    // Build user data and encode it for URL
+    // Build user data and include tel/role so frontend can detect missing fields
     const userData = {
       _id: req.user._id,
       name: req.user.name,
       email: req.user.email,
+      tel: req.user.tel || null,
+      role: req.user.role || 'user',
       token: token
     };
 

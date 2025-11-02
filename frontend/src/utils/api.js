@@ -29,6 +29,7 @@ export const authAPI = {
   login: (data) => api.post('/auth/login', data),
   getMe: () => api.get('/auth/me'),
   logout: () => api.get('/auth/logout'),
+  updateProfile: (data) => api.put('/auth/update', data),
 };
 
 // Hotels API

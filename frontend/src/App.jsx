@@ -12,6 +12,7 @@ import Home from './pages/Home';
 import Hotels from './pages/Hotels';
 import Bookings from './pages/Bookings';
 import GoogleAuthSuccess from './pages/GoogleAuthSuccess';
+import CompleteProfile from './pages/CompleteProfile';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -50,6 +51,10 @@ function App() {
           <Route 
             path="/auth/google/callback" 
             element={<GoogleAuthSuccess setUser={setUser} />} 
+          />
+          <Route 
+            path="/complete-profile" 
+            element={<CompleteProfile setUser={setUser} />} 
           />
           <Route 
             path="/hotels" 

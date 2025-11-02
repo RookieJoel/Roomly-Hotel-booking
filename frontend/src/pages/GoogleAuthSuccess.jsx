@@ -29,18 +29,25 @@ const GoogleAuthSuccess = ({ setUser }) => {
           console.log('Raw data received:', data);
           const userData = JSON.parse(decodeURIComponent(data));
           console.log('Parsed user data:', userData);
-          const { token, name, email, _id } = userData;
-          console.log('Extracted values - token:', token, 'name:', name, 'email:', email, '_id:', _id);
+          const { token, name, email, _id, tel, role } = userData;
+          console.log('Extracted values - token:', token, 'name:', name, 'email:', email, '_id:', _id, 'tel:', tel, 'role:', role);
 
-          // Save to localStorage
+          // Save token and minimal user to localStorage
           localStorage.setItem('token', token);
           localStorage.setItem('user', JSON.stringify({ name, email, _id }));
 
           // Update user state
           setUser({ name, email, _id });
 
+          // If tel is missing or default, redirect to complete profile
+          const needsComplete = !tel || tel === '0000000000' || tel === 'null';
+
           toast.success('Google authentication successful!');
-          navigate('/hotels');
+          if (needsComplete) {
+            navigate('/complete-profile');
+          } else {
+            navigate('/hotels');
+          }
         } catch (err) {
           console.error('Error parsing Google auth data:', err);
           toast.error('Authentication failed. Please try again.');
