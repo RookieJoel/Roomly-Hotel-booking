@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaUser, FaEnvelope, FaLock, FaPhone, FaGoogle, FaUserTag } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { authAPI } from '../utils/api';
 import './Auth.css';
+import RoleDropdown from '../components/RoleDropdown';
 
 const Register = ({ setUser }) => {
   const [formData, setFormData] = useState({
@@ -141,16 +142,8 @@ const Register = ({ setUser }) => {
               <label htmlFor="role">
                 <FaUserTag /> Role
               </label>
-              <select
-                id="role"
-                name="role"
-                value={role}
-                onChange={handleChange}
-                required
-              >
-                <option value="user">User</option>
-                <option value="admin">Admin</option>
-              </select>
+              {/* Replace native select with a styled custom control */}
+              <RoleDropdown value={role} onChange={(val) => setFormData({ ...formData, role: val })} />
             </div>
 
             <div className="form-group">

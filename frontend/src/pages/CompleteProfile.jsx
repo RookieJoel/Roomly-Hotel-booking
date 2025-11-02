@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { authAPI } from '../utils/api';
 import './Auth.css';
+import RoleDropdown from '../components/RoleDropdown';
 
 const CompleteProfile = ({ setUser }) => {
   const [loading, setLoading] = useState(false);
@@ -80,10 +81,7 @@ const CompleteProfile = ({ setUser }) => {
 
           <div className="form-group">
             <label htmlFor="role">Role</label>
-            <select id="role" name="role" value={form.role} onChange={handleChange}>
-              <option value="user">User</option>
-              <option value="admin">Admin</option>
-            </select>
+            <RoleDropdown value={form.role} onChange={(val) => setForm({ ...form, role: val })} />
           </div>
 
           <button className="btn btn-primary btn-block" type="submit" disabled={loading}>{loading ? 'Saving...' : 'Save'}</button>
