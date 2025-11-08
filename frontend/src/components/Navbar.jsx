@@ -32,7 +32,7 @@ const Navbar = ({ user, setUser }) => {
                 <Link to="/hotels" className="nav-link">Hotels</Link>
               </li>
               <li className="nav-item">
-                <Link to="/bookings" className="nav-link">My Bookings</Link>
+                <Link to="/bookings" className="nav-link">{user && user.role === 'admin' ? 'All Bookings' : 'My Bookings'}</Link>
               </li>
               <li className="nav-item">
                 <span className="nav-user">

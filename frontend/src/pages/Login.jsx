@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaEnvelope, FaLock } from 'react-icons/fa';
+import { FaEnvelope, FaLock, FaGoogle } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { authAPI } from '../utils/api';
 import './Auth.css';
@@ -22,6 +22,11 @@ const Login = ({ setUser }) => {
     });
   };
 
+  const handleGoogleLogin = () => {
+    // Redirect to backend Google OAuth endpoint
+    window.location.href = 'http://localhost:8080/api/v1/auth/google';
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -40,10 +45,18 @@ const Login = ({ setUser }) => {
         
         // Save to localStorage
         localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify({ name, email, _id }));
-        
-        // Update user state
-        setUser({ name, email, _id });
+        // Fetch complete user (to get role) then save
+        try {
+          const meResp = await authAPI.getMe();
+          const me = meResp.data && meResp.data.data ? meResp.data.data : { name, email, _id };
+          const userToStore = { name: me.name || name, email: me.email || email, _id: me._id || _id, role: me.role || 'user' };
+          localStorage.setItem('user', JSON.stringify(userToStore));
+          setUser(userToStore);
+        } catch (err) {
+          // fallback
+          localStorage.setItem('user', JSON.stringify({ name, email, _id }));
+          setUser({ name, email, _id });
+        }
         
         toast.success('Login successful!');
         navigate('/hotels');
@@ -101,6 +114,18 @@ const Login = ({ setUser }) => {
             {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
+
+        <div className="auth-divider">
+          <span>OR</span>
+        </div>
+
+        <button 
+          type="button" 
+          className="btn btn-google btn-block"
+          onClick={handleGoogleLogin}
+        >
+          <FaGoogle /> Continue with Google
+        </button>
 
         <p className="auth-footer">
           Don't have an account? <Link to="/register">Register here</Link>

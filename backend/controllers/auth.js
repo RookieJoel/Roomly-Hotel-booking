@@ -32,6 +32,34 @@ exports.register = async (req, res, next) => {
   }
 };
 
+// @desc   Update user profile (partial)
+// @route  PUT /api/v1/auth/update
+// @access Private
+exports.updateProfile = async (req, res) => {
+  try {
+    const userId = req.user && req.user._id;
+    if (!userId) {
+      return res.status(401).json({ success: false, msg: 'Not authorized' });
+    }
+
+    const { name, tel, role } = req.body;
+    const updates = {};
+    if (typeof name !== 'undefined') updates.name = name;
+    if (typeof tel !== 'undefined') updates.tel = tel;
+    if (typeof role !== 'undefined') updates.role = role;
+
+    const user = await User.findByIdAndUpdate(userId, updates, {
+      new: true,
+      runValidators: true,
+    });
+
+    return res.status(200).json({ success: true, data: user });
+  } catch (err) {
+    console.error('Error updating profile:', err);
+    return res.status(500).json({ success: false, msg: 'Server error' });
+  }
+};
+
 exports.login = async (req, res, next) => {
   try {
   const { email, password } = req.body;
@@ -121,20 +149,40 @@ exports.logout = async (req, res, next) => {
 //@access Public
 exports.googleAuthCallback = async (req, res) => {
   try {
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    
+    console.log('=== Google OAuth Callback ===');
+    console.log('User:', req.user ? req.user.email : 'No user');
+    console.log('Frontend URL:', frontendUrl);
+    
     // req.user is set by passport after successful authentication
     if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        msg: "Google authentication failed"
-      });
+      console.log('❌ No user found');
+      return res.redirect(`${frontendUrl}/auth/google/callback?error=authentication_failed`);
     }
+
+    // Generate token for the user
+    const token = req.user.getSignedJwtToken();
+    console.log('✅ Token generated');
+
+    // Build user data and include tel/role so frontend can detect missing fields
+    const userData = {
+      _id: req.user._id,
+      name: req.user.name,
+      email: req.user.email,
+      tel: req.user.tel || null,
+      role: req.user.role || 'user',
+      token: token
+    };
+
+    const encoded = encodeURIComponent(JSON.stringify(userData));
+    const redirectUrl = `${frontendUrl}/auth/google/callback?googleAuth=true&data=${encoded}`;
     
-    sendTokenResponse(req.user, 200, res);
+    console.log('🔄 Redirecting to:', redirectUrl.substring(0, 100) + '...');
+    return res.redirect(redirectUrl);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({
-      success: false,
-      msg: "Server error during Google authentication"
-    });
+    console.error('❌ Error during Google callback:', err);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    return res.redirect(`${frontendUrl}/auth/google/callback?error=server_error`);
   }
 };

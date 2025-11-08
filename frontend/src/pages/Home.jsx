@@ -1,8 +1,31 @@
 import { Link } from 'react-router-dom';
 import { FaHotel, FaCalendarAlt, FaShieldAlt } from 'react-icons/fa';
+import { useState, useEffect } from 'react';
 import './Home.css';
 
 const Home = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    try {
+      const token = localStorage.getItem('token');
+      const user = localStorage.getItem('user');
+      setIsLoggedIn(!!token && !!user);
+    } catch (err) {
+      setIsLoggedIn(false);
+    }
+    // Listen for changes in other tabs
+    const onStorage = (e) => {
+      if (e.key === 'token' || e.key === 'user') {
+        const token = localStorage.getItem('token');
+        const user = localStorage.getItem('user');
+        setIsLoggedIn(!!token && !!user);
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
   return (
     <div className="home">
       <section className="hero-section">
@@ -10,12 +33,20 @@ const Home = () => {
           <h1 className="hero-title">Welcome to Roomly</h1>
           <p className="hero-subtitle">Your perfect hotel booking experience</p>
           <div className="hero-buttons">
-            <Link to="/register" className="btn btn-primary btn-large">
-              Get Started
-            </Link>
-            <Link to="/login" className="btn btn-secondary btn-large">
-              Login
-            </Link>
+            {!isLoggedIn ? (
+              <>
+                <Link to="/register" className="btn btn-primary btn-large">
+                  Get Started
+                </Link>
+                <Link to="/login" className="btn btn-secondary btn-large">
+                  Login
+                </Link>
+              </>
+            ) : (
+              <Link to="/hotels" className="btn btn-primary btn-large">
+                View Hotels
+              </Link>
+            )}
           </div>
         </div>
       </section>
@@ -55,9 +86,15 @@ const Home = () => {
         <div className="cta-content">
           <h2>Ready to Book Your Next Stay?</h2>
           <p>Join thousands of happy travelers</p>
-          <Link to="/register" className="btn btn-primary btn-large">
-            Sign Up Now
-          </Link>
+          {!isLoggedIn ? (
+            <Link to="/register" className="btn btn-primary btn-large">
+              Sign Up Now
+            </Link>
+          ) : (
+            <Link to="/hotels" className="btn btn-primary btn-large">
+              View Hotels
+            </Link>
+          )}
         </div>
       </section>
     </div>

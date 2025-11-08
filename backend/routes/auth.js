@@ -1,6 +1,6 @@
 const express = require('express');
 const passport = require('passport');
-const { register, login, getMe, logout, googleAuthCallback} = require('../controllers/auth');
+const { register, login, getMe, logout, googleAuthCallback, updateProfile } = require('../controllers/auth');
 const { protect } = require('../middleware/auth');
 
 const router = express.Router();
@@ -25,6 +25,9 @@ router.get('/google/callback',
     }),
     googleAuthCallback
 );
+
+// Update profile
+router.put('/update', protect, updateProfile);
 
 // Failure route
 router.get('/google/failure', (req, res) => {

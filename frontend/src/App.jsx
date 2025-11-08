@@ -3,6 +3,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useState, useEffect } from 'react';
 import './App.css';
+import { authAPI } from './utils/api';
 
 // Import components
 import Navbar from './components/Navbar';
@@ -11,6 +12,8 @@ import Register from './pages/Register';
 import Home from './pages/Home';
 import Hotels from './pages/Hotels';
 import Bookings from './pages/Bookings';
+import GoogleAuthSuccess from './pages/GoogleAuthSuccess';
+import CompleteProfile from './pages/CompleteProfile';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -21,9 +24,41 @@ function App() {
     const token = localStorage.getItem('token');
     const userData = localStorage.getItem('user');
     
-    if (token && userData) {
-      setUser(JSON.parse(userData));
-    }
+    const hydrateUser = async () => {
+      if (!token) return;
+
+      if (userData) {
+        try {
+          const parsed = JSON.parse(userData);
+          // If role already included, use it
+          if (parsed && parsed.role) {
+            setUser(parsed);
+            return;
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+
+      // If we have a token but no role, fetch /auth/me to get full user
+      try {
+        const res = await authAPI.getMe();
+        if (res.data && res.data.data) {
+          const me = res.data.data;
+          const userToStore = { name: me.name, email: me.email, _id: me._id, role: me.role };
+          localStorage.setItem('user', JSON.stringify(userToStore));
+          setUser(userToStore);
+          return;
+        }
+      } catch (err) {
+        // failed to fetch me; fall back to whatever we have
+        try {
+          if (userData) setUser(JSON.parse(userData));
+        } catch (e) { }
+      }
+    };
+
+    hydrateUser();
     setLoading(false);
   }, []);
 
@@ -45,6 +80,14 @@ function App() {
           <Route 
             path="/register" 
             element={user ? <Navigate to="/hotels" /> : <Register setUser={setUser} />} 
+          />
+          <Route 
+            path="/auth/google/callback" 
+            element={<GoogleAuthSuccess setUser={setUser} />} 
+          />
+          <Route 
+            path="/complete-profile" 
+            element={<CompleteProfile setUser={setUser} />} 
           />
           <Route 
             path="/hotels" 

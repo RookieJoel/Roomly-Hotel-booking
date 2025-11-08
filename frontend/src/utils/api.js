@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5000/api/v1';
+const API_BASE_URL = 'http://localhost:8080/api/v1';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -29,6 +29,7 @@ export const authAPI = {
   login: (data) => api.post('/auth/login', data),
   getMe: () => api.get('/auth/me'),
   logout: () => api.get('/auth/logout'),
+  updateProfile: (data) => api.put('/auth/update', data),
 };
 
 // Hotels API
@@ -44,6 +45,9 @@ export const hotelsAPI = {
 export const bookingsAPI = {
   getAll: () => api.get('/bookings'),
   getOne: (id) => api.get(`/bookings/${id}`),
+  // Create booking for a specific hotel: POST /hotels/:hotelId/bookings
+  createForHotel: (hotelId, data) => api.post(`/hotels/${hotelId}/bookings`, data),
+  // legacy generic booking create (not hotel-scoped) kept for compatibility
   create: (data) => api.post('/bookings', data),
   update: (id, data) => api.put(`/bookings/${id}`, data),
   delete: (id) => api.delete(`/bookings/${id}`),
