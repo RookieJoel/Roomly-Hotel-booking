@@ -32,6 +32,7 @@ export const authAPI = {
   logout: () => api.get('/auth/logout'),
   forgotPassword: (data) => api.post('/auth/forgotpassword', data),
   resetPassword: (resettoken, data) => api.put(`/auth/resetpassword/${resettoken}`, data),
+  updateProfile: (data) => api.put('/auth/update', data),
 };
 
 // Hotels API
@@ -47,6 +48,9 @@ export const hotelsAPI = {
 export const bookingsAPI = {
   getAll: () => api.get('/bookings'),
   getOne: (id) => api.get(`/bookings/${id}`),
+  // Create booking for a specific hotel: POST /hotels/:hotelId/bookings
+  createForHotel: (hotelId, data) => api.post(`/hotels/${hotelId}/bookings`, data),
+  // legacy generic booking create (not hotel-scoped) kept for compatibility
   create: (data) => api.post('/bookings', data),
   update: (id, data) => api.put(`/bookings/${id}`, data),
   delete: (id) => api.delete(`/bookings/${id}`),

@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
-import { FaCalendarAlt, FaHotel, FaTrash, FaEdit } from 'react-icons/fa';
+import { FaCalendarAlt, FaHotel, FaTrash, FaEdit, FaMapMarkerAlt, FaPhone } from 'react-icons/fa';
 import { toast } from 'react-toastify';
-import { bookingsAPI } from '../utils/api';
+import { bookingsAPI, authAPI } from '../utils/api';
 import './Bookings.css';
 
 const Bookings = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [editingBooking, setEditingBooking] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editData, setEditData] = useState({
@@ -15,7 +16,18 @@ const Bookings = () => {
   });
 
   useEffect(() => {
-    fetchBookings();
+    const init = async () => {
+      try {
+        const me = await authAPI.getMe();
+        if (me.data && me.data.data) {
+          setIsAdmin(me.data.data.role === 'admin');
+        }
+      } catch (err) {
+        setIsAdmin(false);
+      }
+      fetchBookings();
+    };
+    init();
   }, []);
 
   const fetchBookings = async () => {
@@ -115,11 +127,11 @@ const Bookings = () => {
   return (
     <div className="bookings-page">
       <div className="container">
-        <h1 className="page-title">My Bookings</h1>
+  <h1 className="page-title">{isAdmin ? 'All Bookings' : 'My Bookings'}</h1>
         
         {bookings.length === 0 ? (
           <div className="no-bookings">
-            <p>You don't have any bookings yet.</p>
+            <p>{isAdmin ? "No bookings found." : "You don't have any bookings yet."}</p>
             <a href="/hotels" className="btn btn-primary">Browse Hotels</a>
           </div>
         ) : (
@@ -148,7 +160,12 @@ const Bookings = () => {
                   </div>
                 </div>
 
-                <div className="booking-details">
+                  <div className="booking-details">
+                    {isAdmin && booking.user && (
+                      <div style={{ marginBottom: 8 }}>
+                        <strong>Booked by:</strong> {booking.user.name} {booking.user.email ? `(${booking.user.email})` : ''}
+                      </div>
+                    )}
                   <div className="booking-info">
                     <p className="booking-date">
                       <FaCalendarAlt /> Check-in: {formatDate(booking.bookingDate)}
@@ -160,8 +177,8 @@ const Bookings = () => {
                   
                   {booking.hotel && (
                     <div className="hotel-details">
-                      <p>📍 {booking.hotel.address}</p>
-                      <p>📞 {booking.hotel.tel}</p>
+                      <p><FaMapMarkerAlt /> {booking.hotel.address}</p>
+                      <p><FaPhone /> {booking.hotel.tel}</p>
                     </div>
                   )}
                 </div>

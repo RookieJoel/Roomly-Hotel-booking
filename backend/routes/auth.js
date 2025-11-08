@@ -38,6 +38,9 @@ router.get('/google/callback',
     googleAuthCallback
 );
 
+// Update profile
+router.put('/update', protect, updateProfile);
+
 // Failure route
 router.get('/google/failure', (req, res) => {
     res.status(401).json({

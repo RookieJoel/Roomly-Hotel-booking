@@ -6,16 +6,15 @@ const Hotel = require('../models/Hotel');
 exports.getBookings = async (req, res, next) => {
     let query;
     //General users can see only their bookings
+    const commonPopulate = [
+        { path: 'hotel', select: 'name address tel' },
+        { path: 'user', select: 'name email' }
+    ];
+
     if (req.user.role !== 'admin') {
-        query = Booking.find({ user: req.user.id }).populate({
-            path : 'hotel',
-            select : 'name address tel'
-        });
-    }else{
-        query = Booking.find().populate({
-            path : 'hotel',
-            select : 'name address tel'
-        });
+        query = Booking.find({ user: req.user.id }).populate(commonPopulate);
+    } else {
+        query = Booking.find().populate(commonPopulate);
     }
     try {
         const bookings = await query;
@@ -35,10 +34,10 @@ exports.getBookings = async (req, res, next) => {
 //@access Public
 exports.getBooking = async (req, res, next) => {
     try {
-        const booking = await Booking.findById(req.params.id).populate({
-            path : 'hotel',
-            select : 'name address tel'
-        });
+        const booking = await Booking.findById(req.params.id).populate([
+            { path: 'hotel', select: 'name address tel' },
+            { path: 'user', select: 'name email' }
+        ]);
         if (!booking) {
             return res.status(404).json({ success: false , message : `No booking with the id of ${req.params.id}` });
         }
@@ -63,15 +62,29 @@ exports.addBooking = async (req, res, next) => {
         //add user Id to req.body
         req.body.user = req.user.id;
 
+        // If checkoutDate provided, compute numOfNights; otherwise expect numOfNights
+        if (req.body.checkoutDate && req.body.bookingDate) {
+            const checkIn = new Date(req.body.bookingDate);
+            const checkOut = new Date(req.body.checkoutDate);
+            const msPerDay = 24 * 60 * 60 * 1000;
+            const nights = Math.round((checkOut - checkIn) / msPerDay);
+            req.body.numOfNights = nights;
+        }
+
         //check for existing booking
         const existingBooking = await Booking.find({ user: req.user.id });
         if (existingBooking.length >= 3 && req.user.role !== 'admin') {
             return res.status(400).json({ success: false, message: `The user with ID ${req.user.id} already has 3 bookings` });
         }
         const booking = await Booking.create(req.body);
+        // populate hotel and user before returning
+        const populated = await Booking.findById(booking._id).populate([
+            { path: 'hotel', select: 'name address tel' },
+            { path: 'user', select: 'name email' }
+        ]);
         return res.status(200).json({
             success: true,
-            data: booking
+            data: populated
         });
     } catch (error) {
         console.log(error.stack);
@@ -96,7 +109,11 @@ exports.updateBooking = async (req, res, next) => {
             new: true,
             runValidators: true
         });
-        res.status(200).json({ success: true, data: booking });
+        const populated = await Booking.findById(booking._id).populate([
+            { path: 'hotel', select: 'name address tel' },
+            { path: 'user', select: 'name email' }
+        ]);
+        res.status(200).json({ success: true, data: populated });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Cannot update Booking' });
     }
