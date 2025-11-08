@@ -114,6 +114,12 @@ const Hotels = () => {
       const msPerDay = 24 * 60 * 60 * 1000;
       const numOfNights = Math.round((checkOut - checkIn) / msPerDay);
 
+      // Enforce client-side business rule and show a friendly message
+      if (numOfNights > 3) {
+        toast.error('You can only book up to 3 nights');
+        return;
+      }
+
       const response = await bookingsAPI.createForHotel(selectedHotel._id, {
         bookingDate: bookingData.bookingDate,
         checkoutDate: bookingData.checkoutDate,
