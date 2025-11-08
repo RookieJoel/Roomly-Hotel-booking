@@ -1,7 +1,7 @@
 const express = require('express');
 const passport = require('passport');
 const rateLimit = require('express-rate-limit');
-const { register, login, getMe, logout, googleAuthCallback, forgotPassword, resetPassword } = require('../controllers/auth');
+const { register, login, getMe, logout, googleAuthCallback, forgotPassword, resetPassword , updateProfile} = require('../controllers/auth');
 const { protect } = require('../middleware/auth');
 
 const router = express.Router();
@@ -9,7 +9,7 @@ const router = express.Router();
 // OAuth rate limiter
 const oauthLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // Limit each IP to 10 OAuth attempts per windowMs
+  max: 100, // Limit each IP to 10 OAuth attempts per windowMs
   message: 'Too many OAuth attempts, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,

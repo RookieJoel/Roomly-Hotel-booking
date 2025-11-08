@@ -91,6 +91,8 @@ function App() {
           <Route 
             path="/reset-password/:resettoken" 
             element={<ResetPassword />} 
+          />
+          <Route 
             path="/auth/google/callback" 
             element={<GoogleAuthSuccess setUser={setUser} />} 
           />
