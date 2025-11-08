@@ -10,6 +10,7 @@ const rateLimit = require('express-rate-limit');
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
 const passport = require('passport');
+const { doubleCsrf } = require('csrf-csrf');
 
 //load env vars
 dotenv.config({ path: './config/config.env' });
@@ -70,15 +71,45 @@ app.use(helmet());
 //Prevent XSS attacks
 app.use(xss());
 
-//Rate limiting
+//Rate limiting - General
 const limiter = rateLimit({
   windowMs: 10 * 60 * 1000, // 10 mins
   max: 100 // limit each IP to 100 requests per windowMs
 });
 app.use(limiter);
 
+// Specific rate limiting for authentication routes
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 login/register requests per windowMs
+  message: 'Too many authentication attempts, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 //Cookie parser
 app.use(cookieParser());
+
+// CSRF Protection (configured for stateless tokens)
+const { generateToken, doubleCsrfProtection } = doubleCsrf({
+  getSecret: () => process.env.JWT_SECRET || 'your-csrf-secret-key',
+  cookieName: 'x-csrf-token',
+  cookieOptions: {
+    sameSite: 'strict',
+    path: '/',
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true
+  },
+  size: 64,
+  ignoredMethods: ['GET', 'HEAD', 'OPTIONS'],
+  getTokenFromRequest: (req) => req.headers['x-csrf-token']
+});
+
+// Endpoint to generate CSRF token
+app.get('/api/v1/csrf-token', (req, res) => {
+  const csrfToken = generateToken(req, res);
+  res.json({ csrfToken });
+});
 
 // Swagger setup using swagger-jsdoc + swagger-ui-express
 const swaggerOptions = {
@@ -121,6 +152,13 @@ const hotels = require('./routes/hotels');
 const auth = require('./routes/auth');
 const bookings = require('./routes/bookings');
 
+// Apply rate limiting to auth routes
+app.use('/api/v1/auth/register', authLimiter);
+app.use('/api/v1/auth/login', authLimiter);
+app.use('/api/v1/auth/forgotpassword', authLimiter);
+
+// Apply CSRF protection to state-changing routes (can be applied selectively)
+// Note: For APIs with JWT tokens, CSRF is less critical, but adds defense in depth
 app.use('/api/v1/auth', auth);
 app.use('/api/v1/hotels', hotels);
 app.use('/api/v1/bookings', bookings);

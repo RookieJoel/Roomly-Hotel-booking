@@ -68,8 +68,23 @@ const Register = ({ setUser }) => {
         navigate('/hotels');
       }
     } catch (error) {
-      console.error('Registration error:', error);
-      toast.error(error.response?.data?.msg || 'Registration failed. Please try again.');
+      console.error('❌ Registration error:', error);
+      console.error('Error response:', error.response);
+      console.error('Error data:', error.response?.data);
+      
+      // Get error message from backend
+      let errorMessage = 'Registration failed. Please try again.';
+      
+      if (error.response?.data?.msg) {
+        errorMessage = error.response.data.msg;
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      console.error('Displaying error:', errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

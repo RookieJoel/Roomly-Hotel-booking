@@ -1,4 +1,18 @@
 const User = require("../models/User");
+const crypto = require('crypto');
+const sendEmail = require('../utils/sendEmail');
+
+// HTML Escape Helper to prevent XSS in emails
+const escapeHtml = (text) => {
+  const map = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  };
+  return String(text).replace(/[&<>"']/g, m => map[m]);
+};
 
 //@desc   Register user
 //@route  POST /api/v1/auth/register
@@ -6,6 +20,8 @@ const User = require("../models/User");
 exports.register = async (req, res, next) => {
   try {
     const { name, tel, email, password, role } = req.body;
+
+    console.log('📝 Registration attempt:', { name, email, tel });
 
     //Create user
     const user = await User.create({
@@ -16,54 +32,92 @@ exports.register = async (req, res, next) => {
       role,
     });
 
-    // //Create token
-    // const token = user.getSignedJwtToken();
+    console.log('✅ Registration successful:', { 
+      userId: user._id, 
+      email: user.email, 
+      name: user.name 
+    });
 
-    // res.status(200).json({
-    //     success: true,
-    //     token
-    // });
     sendTokenResponse(user, 200, res);
   } catch (err) {
+    console.error('❌ Registration failed:');
+    console.error('Email:', req.body.email);
+    console.error('Error name:', err.name);
+    console.error('Error message:', err.message);
+    
+    // Log specific validation errors
+    if (err.name === 'ValidationError') {
+      console.error('Validation errors:');
+      Object.keys(err.errors).forEach(key => {
+        console.error(`  - ${key}: ${err.errors[key].message}`);
+      });
+    }
+    
+    // Check for duplicate key error
+    if (err.code === 11000) {
+      const field = Object.keys(err.keyPattern)[0];
+      console.error(`Duplicate ${field}:`, req.body[field]);
+      return res.status(400).json({
+        success: false,
+        msg: `${field.charAt(0).toUpperCase() + field.slice(1)} already exists`
+      });
+    }
+    
+    console.error('Full error stack:', err.stack);
+    
     res.status(400).json({
       success: false,
+      msg: err.message || 'Registration failed'
     });
-    console.log(err.stack);
   }
 };
 
 exports.login = async (req, res, next) => {
   try {
-  const { email, password } = req.body;
+    const { email, password } = req.body;
 
-  //Validate email & password
-  if (!email || !password) {
-    return res
-      .status(400)
-      .json({ success: false, msg: "Please provide an email and password" });
-  }
+    console.log('🔐 Login attempt:', { email, timestamp: new Date().toISOString() });
 
-  //check for user
-  const user = await User.findOne({ email }).select("+password");
+    //Validate email & password
+    if (!email || !password) {
+      console.warn('⚠️  Login failed: Missing credentials');
+      return res
+        .status(400)
+        .json({ success: false, msg: "Please provide an email and password" });
+    }
 
-  if (!user) {
-    return res.status(401).json({ success: false, msg: "Invalid credentials" });
-  }
+    //check for user
+    const user = await User.findOne({ email }).select("+password");
 
-  //Check if password matches
-  const isMatch = await user.matchPassword(password);
+    if (!user) {
+      console.warn('❌ Login failed: User not found -', email);
+      return res.status(401).json({ success: false, msg: "Invalid credentials" });
+    }
 
-  if (!isMatch) {
-    return res.status(401).json({ success: false, msg: "Invalid credentials" });
-  }
-  // //create token
-  // const token = user.getSignedJwtToken();
-  // res.status(200).json({ success: true, token });
-  sendTokenResponse(user, 200, res);
-  }catch (err) {
+    //Check if password matches
+    const isMatch = await user.matchPassword(password);
+
+    if (!isMatch) {
+      console.warn('❌ Login failed: Incorrect password for', email);
+      return res.status(401).json({ success: false, msg: "Invalid credentials" });
+    }
+
+    console.log('✅ Login successful:', { 
+      userId: user._id, 
+      email: user.email, 
+      name: user.name 
+    });
+
+    sendTokenResponse(user, 200, res);
+  } catch (err) {
+    console.error('❌ Login error:', {
+      email: req.body.email,
+      error: err.message,
+      stack: err.stack
+    });
     res.status(401).json({
       success: false,
-      msg: "Cannot convert email or password to string",
+      msg: "Login failed. Please try again.",
     });
   }
 };
@@ -77,9 +131,10 @@ const sendTokenResponse = (user, statusCode, res) => {
       Date.now() + process.env.JWT_COOKIE_EXPIRE * 24 * 60 * 60 * 1000
     ),
     httpOnly: true,
+    sameSite: 'strict', // Prevent CSRF attacks
   };
   if (process.env.NODE_ENV === "production") {
-    options.secure = true;
+    options.secure = true; // Only send cookie over HTTPS in production
   }
   res
     .status(statusCode) /*.cookie('token',token,options)*/
@@ -109,6 +164,8 @@ exports.logout = async (req, res, next) => {
   res.cookie("token", "none", {
     expires: new Date(Date.now() + 10 * 1000),
     httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
   });
   res.status(200).json({
     success: true,
@@ -135,6 +192,146 @@ exports.googleAuthCallback = async (req, res) => {
     res.status(500).json({
       success: false,
       msg: "Server error during Google authentication"
+    });
+  }
+};
+
+//@desc  Forgot password
+//@route POST /api/v1/auth/forgotpassword
+//@access Public
+exports.forgotPassword = async (req, res, next) => {
+  try {
+    const user = await User.findOne({ email: req.body.email });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        msg: 'There is no user with that email'
+      });
+    }
+
+    // Get reset token
+    const resetToken = user.getResetPasswordToken();
+
+    await user.save({ validateBeforeSave: false });
+
+    // Create reset url
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .button { display: inline-block; padding: 15px 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+          .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🔐 Password Reset Request</h1>
+          </div>
+          <div class="content">
+            <p>Hello,</p>
+            <p>You have requested to reset your password for your Hotel Booking account.</p>
+            <p>Please click the button below to reset your password. This link will expire in <strong>10 minutes</strong>.</p>
+            <div style="text-align: center;">
+              <a href="${resetUrl}" class="button">Reset Password</a>
+            </div>
+            <p>Or copy and paste this link in your browser:</p>
+            <p style="word-break: break-all; color: #667eea;">${resetUrl}</p>
+            <p><strong>If you did not request this password reset, please ignore this email.</strong></p>
+            <p>For security reasons, this link will only work once and will expire after 10 minutes.</p>
+          </div>
+          <div class="footer">
+            <p>© 2024 Hotel Booking System. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    try {
+      await sendEmail({
+        email: escapeHtml(user.email), // Sanitize email to prevent XSS
+        subject: 'Password Reset Request - Hotel Booking System',
+        html
+      });
+
+      res.status(200).json({ 
+        success: true, 
+        msg: 'Email sent. Please check your inbox.',
+        data: {} 
+      });
+    } catch (err) {
+      console.log(err);
+      user.resetpasswordToken = undefined;
+      user.resetpasswordExpire = undefined;
+
+      await user.save({ validateBeforeSave: false });
+
+      return res.status(500).json({
+        success: false,
+        msg: 'Email could not be sent'
+      });
+    }
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      success: false,
+      msg: 'Server error'
+    });
+  }
+};
+
+//@desc  Reset password
+//@route PUT /api/v1/auth/resetpassword/:resettoken
+//@access Public
+exports.resetPassword = async (req, res, next) => {
+  try {
+    // Get hashed token
+    const resetpasswordToken = crypto
+      .createHash('sha256')
+      .update(req.params.resettoken)
+      .digest('hex');
+
+    const user = await User.findOne({
+      resetpasswordToken,
+      resetpasswordExpire: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        msg: 'Invalid token or token has expired'
+      });
+    }
+
+    // Validate password confirmation
+    if (req.body.password !== req.body.confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        msg: 'Passwords do not match'
+      });
+    }
+
+    // Set new password
+    user.password = req.body.password;
+    user.resetpasswordToken = undefined;
+    user.resetpasswordExpire = undefined;
+    await user.save();
+
+    sendTokenResponse(user, 200, res);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      success: false,
+      msg: 'Server error'
     });
   }
 };

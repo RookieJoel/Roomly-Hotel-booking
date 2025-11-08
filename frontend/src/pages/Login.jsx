@@ -49,8 +49,23 @@ const Login = ({ setUser }) => {
         navigate('/hotels');
       }
     } catch (error) {
-      console.error('Login error:', error);
-      toast.error(error.response?.data?.msg || 'Login failed. Please try again.');
+      console.error('❌ Login error:', error);
+      console.error('Error response:', error.response);
+      console.error('Error data:', error.response?.data);
+      
+      // Get error message from backend
+      let errorMessage = 'Login failed. Please try again.';
+      
+      if (error.response?.data?.msg) {
+        errorMessage = error.response.data.msg;
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      console.error('Displaying error:', errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -91,6 +106,19 @@ const Login = ({ setUser }) => {
               placeholder="Enter your password"
               required
             />
+          </div>
+
+          <div style={{ textAlign: 'right', marginBottom: '15px' }}>
+            <Link 
+              to="/forgot-password" 
+              style={{ 
+                color: '#667eea', 
+                fontSize: '14px',
+                textDecoration: 'none'
+              }}
+            >
+              Forgot Password?
+            </Link>
           </div>
 
           <button 

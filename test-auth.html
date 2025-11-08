@@ -380,10 +380,24 @@
             window.location.href = `${API_BASE}/auth/google`;
         }
         
+        // HTML Escape Helper to prevent XSS
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return String(text).replace(/[&<>"']/g, m => map[m]);
+        }
+
         // Save Token
         function saveToken(token) {
-            localStorage.setItem('auth_token', token);
-            console.log('Token saved:', token);
+            // Sanitize token before storing
+            const sanitizedToken = escapeHtml(token);
+            localStorage.setItem('auth_token', sanitizedToken);
+            console.log('Token saved:', sanitizedToken);
         }
         
         // Show Result
@@ -393,10 +407,12 @@
             
             const title = type === 'success' ? '✅ Success!' : '❌ Error';
             
-            resultDiv.innerHTML = `
-                <h3>${title}</h3>
-                <pre>${JSON.stringify(data, null, 2)}</pre>
-            `;
+            // Use textContent instead of innerHTML for user data
+            const preElement = document.createElement('pre');
+            preElement.textContent = JSON.stringify(data, null, 2);
+            
+            resultDiv.innerHTML = `<h3>${title}</h3>`;
+            resultDiv.appendChild(preElement);
         }
         
         // Hide Result

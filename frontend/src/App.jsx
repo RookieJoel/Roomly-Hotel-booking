@@ -11,6 +11,8 @@ import Register from './pages/Register';
 import Home from './pages/Home';
 import Hotels from './pages/Hotels';
 import Bookings from './pages/Bookings';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -45,6 +47,14 @@ function App() {
           <Route 
             path="/register" 
             element={user ? <Navigate to="/hotels" /> : <Register setUser={setUser} />} 
+          />
+          <Route 
+            path="/forgot-password" 
+            element={user ? <Navigate to="/hotels" /> : <ForgotPassword />} 
+          />
+          <Route 
+            path="/reset-password/:resettoken" 
+            element={<ResetPassword />} 
           />
           <Route 
             path="/hotels" 
