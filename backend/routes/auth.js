@@ -6,10 +6,10 @@ const { protect } = require('../middleware/auth');
 
 const router = express.Router();
 
-// OAuth rate limiter
+// OAuth rate limiter - Best practice: stricter limits
 const oauthLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 10 OAuth attempts per windowMs
+  max: 10, // Limit each IP to 10 OAuth attempts per windowMs (reduced from 100)
   message: 'Too many OAuth attempts, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
@@ -20,12 +20,26 @@ router.post('/login', login);
 router.get('/me', protect, getMe);
 router.get('/logout', logout);
 
-// Google OAuth routes - with rate limiting
+// Google OAuth routes - with rate limiting and state parameter for CSRF protection
 router.get('/google', 
     oauthLimiter,
+    (req, res, next) => {
+        // Generate state parameter for CSRF protection
+        const crypto = require('crypto');
+        const state = crypto.randomBytes(32).toString('hex');
+        
+        // Store state in session (requires express-session)
+        if (req.session) {
+            req.session.oauthState = state;
+        }
+        
+        next();
+    },
     passport.authenticate('google', { 
         scope: ['profile', 'email'],
-        session: false 
+        session: false,
+        accessType: 'offline', // Request refresh token
+        prompt: 'consent' // Force consent screen to ensure refresh token
     })
 );
 

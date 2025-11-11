@@ -10,6 +10,7 @@ const rateLimit = require('express-rate-limit');
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
 const passport = require('passport');
+const session = require('express-session');
 const { doubleCsrf } = require('csrf-csrf');
 
 //load env vars
@@ -23,14 +24,42 @@ const app = express();
 // Passport config
 require('./config/passport')(passport);
 
-//Enable CORS
+//Enable CORS - BEST PRACTICE: Specify exact origins instead of wildcard
+const allowedOrigins = [
+    process.env.FRONTEND_URL || 'http://localhost:5173',
+    'http://localhost:5173', // Development
+    'http://localhost:3000'  // Alternative dev port
+];
+
 app.use(cors({
-    origin: '*', // Allow multiple frontend origins
-    credentials: true // Allow cookies
+    origin: function(origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl)
+        if (!origin) return callback(null, true);
+        
+        if (allowedOrigins.indexOf(origin) === -1) {
+            const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+            return callback(new Error(msg), false);
+        }
+        return callback(null, true);
+    },
+    credentials: true, // REQUIRED: Allow cookies to be sent with requests
+    exposedHeaders: ['set-cookie'] // Allow frontend to read set-cookie header
 }));
 
 //Body parser
 app.use(express.json());
+
+// Session configuration - REQUIRED for OAuth state parameter
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'your-secret-key-change-in-production',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+        httpOnly: true,
+        maxAge: 10 * 60 * 1000 // 10 minutes - enough for OAuth flow
+    }
+}));
 
 // Initialize Passport
 app.use(passport.initialize());

@@ -200,14 +200,15 @@ const Register = ({ setUser }) => {
           </button>
         </form>
 
-        <div className="auth-divider">
-          <span>OR</span>
-        </div>
+                <div className="separator">OR</div>
 
-        <button 
-          type="button" 
+        <button
+          type="button"
           className="btn btn-google btn-block"
-          onClick={() => { window.location.href = 'http://localhost:8080/api/v1/auth/google'; }}
+          onClick={() => { 
+            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1';
+            window.location.href = `${API_BASE_URL}/auth/google`;
+          }}
         >
           <FaGoogle /> Continue with Google
         </button>

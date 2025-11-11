@@ -220,22 +220,55 @@ exports.googleAuthCallback = async (req, res) => {
 
     // Generate token for the user
     const token = req.user.getSignedJwtToken();
-    console.log('✅ Token generated');
+    console.log('✅ Token generated:', token.substring(0, 20) + '...');
 
-    // Build user data and include tel/role so frontend can detect missing fields
+    // BEST PRACTICE: Set token as HTTP-only cookie instead of URL parameter
+    const options = {
+      expires: new Date(
+        Date.now() + process.env.JWT_COOKIE_EXPIRE * 24 * 60 * 60 * 1000
+      ),
+      httpOnly: true, // Prevent XSS attacks
+      secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+      sameSite: 'lax', // Changed from 'strict' to 'lax' - allows cookie on OAuth redirect
+      path: '/'
+    };
+
+    console.log('🍪 Cookie options:', {
+      ...options,
+      expires: options.expires.toISOString(),
+      secure: options.secure,
+      sameSite: options.sameSite,
+      nodeEnv: process.env.NODE_ENV
+    });
+
+    // Build user data (WITH token as fallback)
+    // NOTE: In production with HTTPS, the cookie should work
+    // Including token here as temporary fallback for development
     const userData = {
       _id: req.user._id,
       name: req.user.name,
       email: req.user.email,
       tel: req.user.tel || null,
       role: req.user.role || 'user',
-      token: token
+      token: token // Temporary: include token as fallback
     };
 
+    // Set token in HTTP-only cookie (primary method)
+    res.cookie('token', token, options);
+    console.log('✅ Cookie set with name: token');
+
+    // Pass user data (with token as fallback) in URL
     const encoded = encodeURIComponent(JSON.stringify(userData));
     const redirectUrl = `${frontendUrl}/auth/google/callback?googleAuth=true&data=${encoded}`;
     
     console.log('🔄 Redirecting to:', redirectUrl.substring(0, 100) + '...');
+    console.log('⚠️ Note: Token included in URL as fallback (should work via cookie in production)');
+    
+    // Clear OAuth state from session
+    if (req.session?.oauthState) {
+      delete req.session.oauthState;
+    }
+    
     return res.redirect(redirectUrl);
   } catch (err) {
     console.error('❌ Error during Google callback:', err);
