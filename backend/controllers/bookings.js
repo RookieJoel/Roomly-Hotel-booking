@@ -57,6 +57,10 @@ exports.getBooking = async (req, res, next) => {
         if (!booking) {
             return res.status(404).json({ success: false , message : `No booking with the id of ${req.params.id}` });
         }
+        // Authorization: only admins can fetch any booking; normal users may only fetch their own
+        if (req.user.role !== 'admin' && booking.user.toString() !== req.user.id) {
+            return res.status(401).json({ success: false, message: 'Not authorized to view this booking' });
+        }
         res.status(200).json({ success: true, data: booking });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Cannot find Booking' });
