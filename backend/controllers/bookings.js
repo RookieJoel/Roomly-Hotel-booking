@@ -1,10 +1,24 @@
 const Booking = require('../models/Booking');
 const Hotel = require('../models/Hotel');
+
+// Cleanup helper: delete bookings where checkoutDate is in the past
+async function cleanExpiredBookings() {
+    try {
+        const now = new Date();
+        // delete bookings whose checkoutDate is before current time
+        await Booking.deleteMany({ checkoutDate: { $lt: now } });
+    } catch (err) {
+        console.error('Error cleaning expired bookings:', err.stack || err);
+    }
+}
+
 //@desc GET all bookings
 //@route GET /api/v1/bookings
 //@access Private
 exports.getBookings = async (req, res, next) => {
     let query;
+    // remove any bookings that have already passed
+    await cleanExpiredBookings();
     //General users can see only their bookings
     const commonPopulate = [
         { path: 'hotel', select: 'name address tel' },
@@ -34,6 +48,8 @@ exports.getBookings = async (req, res, next) => {
 //@access Public
 exports.getBooking = async (req, res, next) => {
     try {
+        // remove expired bookings first
+        await cleanExpiredBookings();
         const booking = await Booking.findById(req.params.id).populate([
             { path: 'hotel', select: 'name address tel' },
             { path: 'user', select: 'name email' }
@@ -71,11 +87,6 @@ exports.addBooking = async (req, res, next) => {
             req.body.numOfNights = nights;
         }
 
-        //check for existing booking
-        const existingBooking = await Booking.find({ user: req.user.id });
-        if (existingBooking.length >= 3 && req.user.role !== 'admin') {
-            return res.status(400).json({ success: false, message: `The user with ID ${req.user.id} already has 3 bookings` });
-        }
         const booking = await Booking.create(req.body);
         // populate hotel and user before returning
         const populated = await Booking.findById(booking._id).populate([
