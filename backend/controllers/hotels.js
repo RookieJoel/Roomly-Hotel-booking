@@ -25,14 +25,14 @@ exports.getHotels = async (req, res) => {
 
         query = Hotel.find(JSON.parse(queryStr)).populate('bookings');
 
-        // Select Fields
-        if (req.query.select) {
+        // Select Fields - with type validation
+        if (req.query.select && typeof req.query.select === 'string') {
             const fields = req.query.select.split(',').join(' ');
             query = query.select(fields);
         }
 
-        // Sort
-        if (req.query.sort) {
+        // Sort - with type validation
+        if (req.query.sort && typeof req.query.sort === 'string') {
             const sortBy = req.query.sort.split(',').join(' ');
             query = query.sort(sortBy);
         } else {

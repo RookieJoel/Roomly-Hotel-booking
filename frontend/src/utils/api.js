@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8080/api/v1';
+// Use environment variable with fallback for development
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -29,6 +30,8 @@ export const authAPI = {
   login: (data) => api.post('/auth/login', data),
   getMe: () => api.get('/auth/me'),
   logout: () => api.get('/auth/logout'),
+  forgotPassword: (data) => api.post('/auth/forgotpassword', data),
+  resetPassword: (resettoken, data) => api.put(`/auth/resetpassword/${resettoken}`, data),
   updateProfile: (data) => api.put('/auth/update', data),
 };
 
