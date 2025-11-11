@@ -123,7 +123,7 @@ exports.deleteHotel = async (req, res) => {
     try{
         const hotel = await Hotel.findById(req.params.id);
         if (!hotel) {
-            return res.status(404).json({ success: false ,message : `Hotel not found with id of ${req.params.id}`});
+            return res.status(404).json({ success: false ,message : `Hotel not found with this id`});
         }
         await Booking.deleteMany({ hotel: req.params.id });
         await Hotel.deleteOne({_id: req.params.id});
@@ -181,7 +181,7 @@ exports.deleteHospital = async (req, res) => {
     try{
         const hospital = await Hospital.findById(req.params.id);
         if (!hospital) {
-            return res.status(404).json({ success: false ,message : `Hospital not found with id of ${req.params.id}`});
+            return res.status(404).json({ success: false ,message : `Hospital not found with this id`});
         }
         await Appointment.deleteMany({ hospital: req.params.id });
         await Hospital.deleteOne({_id: req.params.id});

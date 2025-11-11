@@ -55,7 +55,7 @@ exports.getBooking = async (req, res, next) => {
             { path: 'user', select: 'name email' }
         ]);
         if (!booking) {
-            return res.status(404).json({ success: false , message : `No booking with the id of ${req.params.id}` });
+            return res.status(404).json({ success: false , message : `No booking with this id` });
         }
         // Authorization: only admins can fetch any booking; normal users may only fetch their own
         if (req.user.role !== 'admin' && booking.user.toString() !== req.user.id) {
@@ -76,7 +76,7 @@ exports.addBooking = async (req, res, next) => {
         
         const hotel = await Hotel.findById(req.params.hotelId);
         if (!hotel) {
-            return res.status(404).json({ success: false, message: `No hotel with the id of ${req.params.hotelId}` });
+            return res.status(404).json({ success: false, message: `No hotel with this id` });
         }
 
         //add user Id to req.body
@@ -88,7 +88,18 @@ exports.addBooking = async (req, res, next) => {
             const checkOut = new Date(req.body.checkoutDate);
             const msPerDay = 24 * 60 * 60 * 1000;
             const nights = Math.round((checkOut - checkIn) / msPerDay);
-            req.body.numOfNights = nights;
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            if (checkIn < today) {
+                return res.status(400).json({ success: false, message: 'You can only book for now or future.' });
+            }
+            if (checkOut < checkIn) {
+                return res.status(400).json({ success: false, message: 'Check out date cannot be before check in date.' });
+            }
+            // enforce maximum nights rule on server side as well
+            if (nights > 3) {
+                return res.status(400).json({ success: false, message: 'You can only book up to 3 nights.' });
+            }
         }
 
         const booking = await Booking.create(req.body);
@@ -114,11 +125,11 @@ exports.updateBooking = async (req, res, next) => {
     try {
         let booking = await Booking.findById(req.params.id);
         if (!booking) {
-            return res.status(404).json({ success: false, message: `No booking with the id of ${req.params.id}` });
+            return res.status(404).json({ success: false, message: `No booking with this id` });
         }
         //make sure user is booking owner
         if (booking.user.toString() !== req.user.id && req.user.role !== 'admin') {
-            return res.status(401).json({ success: false, message: `User ${req.user.id} is not authorized to update this booking` });
+            return res.status(401).json({ success: false, message: `This user is not authorized to update this booking` });
         }
         booking = await Booking.findByIdAndUpdate(req.params.id, req.body, {
             new: true,
@@ -141,12 +152,12 @@ exports.deleteBooking = async (req, res, next) => {
     try {
         const booking = await Booking.findById(req.params.id);
         if (!booking) {
-            return res.status(404).json({ success: false, message: `No booking with the id of ${req.params.id}` });
+            return res.status(404).json({ success: false, message: `No booking with this id` });
         }
         
         //make sure user is booking owner
         if (booking.user.toString() !== req.user.id && req.user.role !== 'admin') {
-            return res.status(401).json({ success: false, message: `User ${req.user.id} is not authorized to delete this booking` });
+            return res.status(401).json({ success: false, message: `This user is not authorized to delete this booking` });
         }
         
         await booking.deleteOne();
