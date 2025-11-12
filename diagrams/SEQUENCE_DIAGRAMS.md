@@ -134,13 +134,14 @@ sequenceDiagram
 
 ---
 
-## 2. Google OAuth Authentication Sequence
+## 2. Google OAuth Authentication Sequence (Enhanced Security)
 
 ```mermaid
 sequenceDiagram
     actor User
     participant Browser
     participant AuthRoute
+    participant Session
     participant Passport
     participant GoogleAPI
     participant Strategy
@@ -154,97 +155,291 @@ sequenceDiagram
     Browser->>AuthRoute: GET /api/v1/auth/google
     activate AuthRoute
     
-    AuthRoute->>Passport: authenticate('google')
+    AuthRoute->>AuthRoute: Generate CSRF state token
+    Note over AuthRoute: crypto.randomBytes(32).toString('hex')<br/>64 character random string
+    
+    AuthRoute->>Session: Store state in session
+    activate Session
+    Session-->>AuthRoute: State saved
+    deactivate Session
+    
+    AuthRoute->>Passport: authenticate('google', {state})
     activate Passport
     
-    Passport->>GoogleAPI: Redirect to consent screen
+    Passport->>GoogleAPI: Redirect with state parameter
     activate GoogleAPI
+    Note over Passport,GoogleAPI: scope: ['profile', 'email']<br/>accessType: 'offline'<br/>prompt: 'consent'<br/>state: {random64charString}
     
     Browser->>GoogleAPI: User authorizes app
     Note over User,GoogleAPI: User grants profile & email access
     
-    GoogleAPI-->>Browser: 302 Redirect with code
+    GoogleAPI-->>Browser: 302 Redirect with code + state
     deactivate GoogleAPI
+    Note over GoogleAPI,Browser: /callback?code=xxx&state=xxx
     
-    Browser->>AuthRoute: GET /api/v1/auth/google/callback?code=xxx
+    Browser->>AuthRoute: GET /api/v1/auth/google/callback?code=xxx&state=xxx
     deactivate Browser
     
-    AuthRoute->>Passport: authenticate('google')
+    AuthRoute->>AuthRoute: Verify rate limit (10/15min)
     
-    Passport->>GoogleAPI: Exchange code for token
-    activate GoogleAPI
-    GoogleAPI-->>Passport: Access token & profile
-    deactivate GoogleAPI
+    AuthRoute->>Session: Retrieve stored state
+    activate Session
+    Session-->>AuthRoute: Original state
+    deactivate Session
     
-    Passport->>Strategy: Call verify callback
-    activate Strategy
-    Note over Passport,Strategy: profile: {id, email, name}
+    AuthRoute->>AuthRoute: Compare states
+    Note over AuthRoute: CSRF Protection:<br/>req.query.state === req.session.oauthState
     
-    Strategy->>UserModel: findOne({email})
-    activate UserModel
-    UserModel->>Database: Query user
-    activate Database
-    
-    alt User exists
-        Database-->>UserModel: User found
-        UserModel-->>Strategy: Existing user
-    else User not found
-        Database-->>UserModel: null
-        UserModel->>UserModel: Create user
-        Note over UserModel: name, email, googleId,<br/>random password
-        UserModel->>Database: Save new user
-        Database-->>UserModel: User created
-        UserModel-->>Strategy: New user
+    alt State mismatch
+        AuthRoute-->>Browser: 403 Forbidden
+        activate Browser
+        Browser->>User: Show "Security error"
+        deactivate Browser
+    else State valid
+        AuthRoute->>Passport: authenticate('google')
+        
+        Passport->>GoogleAPI: Exchange code for token
+        activate GoogleAPI
+        GoogleAPI-->>Passport: Access token
+        deactivate GoogleAPI
+        
+        Passport->>GoogleAPI: Get user profile
+        activate GoogleAPI
+        GoogleAPI-->>Passport: Profile data
+        deactivate GoogleAPI
+        Note over GoogleAPI,Passport: {id, emails, name, photos}
+        
+        Passport->>Strategy: Call verify callback
+        activate Strategy
+        Note over Passport,Strategy: passReqToCallback: true<br/>req, accessToken, refreshToken, profile, done
+        
+        Strategy->>Strategy: Validate email exists
+        Note over Strategy: Check profile.emails exists
+        
+        alt No email in profile
+            Strategy-->>Passport: done(error, null)
+            Passport-->>AuthRoute: Authentication failed
+            AuthRoute-->>Browser: 401 Unauthorized
+            activate Browser
+            Browser->>User: Show "Email required"
+            deactivate Browser
+        else Email exists
+            Strategy->>Strategy: Verify email verified status
+            Note over Strategy: Check emails[0].verified === true
+            
+            alt Email not verified
+                Strategy-->>Passport: done(error, null)
+                Passport-->>AuthRoute: Authentication failed
+                AuthRoute-->>Browser: 403 Forbidden
+                activate Browser
+                Browser->>User: Show "Email not verified by Google"
+                deactivate Browser
+            else Email verified
+                Strategy->>UserModel: findOne({googleId: profile.id})
+                activate UserModel
+                UserModel->>Database: Query by googleId
+                activate Database
+                
+                alt User found by googleId
+                    Database-->>UserModel: User document
+                else Not found by googleId
+                    Database-->>UserModel: null
+                    UserModel->>Database: findOne({email: profile.email})
+                    
+                    alt User found by email
+                        Database-->>UserModel: User document
+                        UserModel->>UserModel: Update googleId
+                        Note over UserModel: Link Google account to existing user
+                        UserModel->>Database: Save updated user
+                    else User not found
+                        Database-->>UserModel: null
+                        UserModel->>UserModel: Generate secure password
+                        Note over UserModel: crypto.randomBytes(32).toString('hex')<br/>64 character random password
+                        
+                        UserModel->>UserModel: Create new user
+                        Note over UserModel: name: profile.displayName<br/>email: profile.emails[0].value<br/>googleId: profile.id<br/>password: {secureRandom}<br/>tel: '0000000000'
+                        
+                        UserModel->>Database: Save new user
+                        Database-->>UserModel: User created
+                    end
+                end
+                
+                deactivate Database
+                UserModel-->>Strategy: User object
+                deactivate UserModel
+                
+                Strategy-->>Passport: done(null, user)
+                deactivate Strategy
+                
+                Passport-->>AuthRoute: req.user = user
+                deactivate Passport
+                
+                AuthRoute->>JWT: Generate token
+                activate JWT
+                Note over JWT: Payload: {id: user._id}<br/>Expiry: 30 days
+                JWT-->>AuthRoute: JWT token
+                deactivate JWT
+                
+                AuthRoute->>AuthRoute: Set HTTP-only cookie
+                Note over AuthRoute: Cookie options:<br/>httpOnly: true<br/>secure: production<br/>sameSite: 'lax'<br/>maxAge: 30 days
+                
+                AuthRoute->>Session: Clear OAuth state
+                activate Session
+                Session-->>AuthRoute: State cleared
+                deactivate Session
+                
+                AuthRoute-->>Browser: 302 Redirect to frontend
+                activate Browser
+                Note over AuthRoute,Browser: URL: /google-auth-success?userData={...}<br/>Cookie: token={JWT}<br/>userData includes fallback token
+                
+                Browser->>Browser: Read token from cookie
+                Note over Browser: Primary: document.cookie<br/>Fallback: URL parameter
+                
+                alt Token found in cookie
+                    Browser->>Browser: Store token in localStorage
+                    Browser->>User: Redirect based on tel
+                    Note over Browser,User: tel === '0000000000' → /complete-profile<br/>else → /hotels
+                else Token not in cookie
+                    Browser->>Browser: Use fallback from URL
+                    Browser->>User: Same redirect logic
+                end
+                deactivate Browser
+            end
+        end
+        deactivate AuthRoute
     end
-    
-    deactivate Database
-    deactivate UserModel
-    
-    Strategy-->>Passport: done(null, user)
-    deactivate Strategy
-    
-    Passport-->>AuthRoute: req.user = user
-    deactivate Passport
-    
-    AuthRoute->>JWT: Generate token
-    activate JWT
-    JWT-->>AuthRoute: JWT token
-    deactivate JWT
-    
-    AuthRoute-->>Browser: 200 OK + {success, user, token}
-    activate Browser
-    Browser->>Browser: Store token
-    Browser->>User: Show success / redirect
-    deactivate Browser
-    deactivate AuthRoute
 ```
 
-**Flow Description:**
-1. User clicks "Sign in with Google" button
-2. Browser redirects to `/api/v1/auth/google`
-3. Passport generates Google OAuth URL
-4. User is redirected to Google consent screen
-5. User grants permissions (profile, email)
-6. Google redirects back with authorization code
-7. Passport exchanges code for access token
-8. Passport retrieves user profile from Google
-9. Strategy checks if user exists by email:
-   - **If exists:** Return existing user
-   - **If not exists:** Create new user with:
-     - `name` from Google profile
-     - `email` from Google profile
-     - `googleId` from Google profile
-     - Random password (not used)
-     - `tel` is optional (not required for OAuth)
-10. JWT token is generated with user ID
-11. Response returns user data and token
-12. Browser stores token
+**Enhanced Flow Description:**
 
-**Key Points:**
-- No password required from user
-- Phone number (`tel`) is optional for OAuth users
-- `googleId` is stored for future authentication
-- Email is used as unique identifier
+### Phase 1: OAuth Initiation with CSRF Protection
+1. User clicks "Sign in with Google" button
+2. Browser requests `/api/v1/auth/google`
+3. **CSRF State Generation:** Server generates cryptographically secure 64-character random state
+4. **Session Storage:** State is stored in server-side session (10-minute expiry)
+5. Passport redirects to Google with state parameter
+
+### Phase 2: Google Authorization
+6. User is redirected to Google consent screen
+7. User grants permissions (profile, email)
+8. Google redirects back with authorization code AND state parameter
+
+### Phase 3: Security Validation
+9. **Rate Limiting Check:** Maximum 10 OAuth attempts per 15 minutes per IP
+10. **State Retrieval:** Server retrieves original state from session
+11. **CSRF Verification:** Compare `req.query.state` with `req.session.oauthState`
+    - If mismatch → 403 Forbidden (CSRF attack prevented)
+    - If match → Continue
+
+### Phase 4: Token Exchange & Profile Retrieval
+12. Passport exchanges authorization code for access token
+13. Passport fetches user profile from Google API
+
+### Phase 5: Email Validation
+14. **Email Existence Check:** Verify `profile.emails` exists
+    - If missing → 401 Unauthorized
+15. **Email Verification Check:** Verify `profile.emails[0].verified === true`
+    - If not verified → 403 Forbidden
+    - Only accepts Google-verified emails
+
+### Phase 6: User Lookup Strategy (Dual-Method)
+16. **Primary Lookup:** Search by `googleId`
+    - If found → Use existing user
+17. **Secondary Lookup:** If not found by googleId, search by `email`
+    - If found → Link Google account (update `googleId` field)
+18. **User Creation:** If neither found:
+    - Generate secure random password using `crypto.randomBytes(32)` (64 chars)
+    - Create new user with:
+      - `name`: From Google profile
+      - `email`: From Google (verified)
+      - `googleId`: From Google
+      - `password`: Secure random (bcrypt hashed)
+      - `tel`: Default '0000000000' (requires completion)
+
+### Phase 7: JWT Generation & Cookie Security
+19. Generate JWT token with 30-day expiration
+20. **HTTP-only Cookie:** Set secure cookie with:
+    - `httpOnly: true` → Prevents XSS attacks
+    - `secure: true` → HTTPS only (production)
+    - `sameSite: 'lax'` → Allows OAuth redirects, prevents CSRF
+    - `maxAge: 30 days` → Long-term authentication
+
+### Phase 8: Session Cleanup & Redirect
+21. Clear OAuth state from session (no longer needed)
+22. Redirect to frontend with:
+    - **Primary:** JWT in HTTP-only cookie
+    - **Fallback:** JWT in URL parameter (development/debugging)
+
+### Phase 9: Frontend Token Handling
+23. Frontend attempts to read token from cookie
+24. If cookie not accessible, uses fallback from URL
+25. Stores token in localStorage for API requests
+26. Redirects based on profile completion:
+    - `tel === '0000000000'` → `/complete-profile`
+    - Otherwise → `/hotels`
+
+---
+
+**Key Security Features:**
+
+### 🔒 CSRF Protection
+- **State Parameter:** 64-character cryptographically secure random string
+- **Session Storage:** State stored server-side, not in cookie
+- **Verification:** State must match on callback, prevents CSRF attacks
+
+### 🔒 Email Verification
+- **Trusted Source:** Only accepts Google-verified emails
+- **Profile Check:** Verifies `profile.emails[0].verified === true`
+- **Prevents:** Fake email registration
+
+### 🔒 Rate Limiting
+- **OAuth Endpoint:** 10 requests per 15 minutes per IP
+- **Prevents:** Brute force and DoS attacks
+
+### 🔒 Secure Cookie Configuration
+- **httpOnly:** JavaScript cannot access token (XSS protection)
+- **secure:** HTTPS only in production (MITM protection)
+- **sameSite: 'lax':** Allows OAuth redirects, blocks CSRF
+
+### 🔒 Secure Password Generation
+- **Method:** `crypto.randomBytes(32).toString('hex')`
+- **Length:** 64 characters hexadecimal
+- **Entropy:** 256 bits of randomness
+- **Purpose:** OAuth users never use this, but it's secure if needed
+
+### 🔒 User Lookup Strategy
+- **Primary:** GoogleId (direct OAuth identifier)
+- **Fallback:** Email (allows account linking)
+- **Update:** Links Google account if found by email only
+- **Prevents:** Duplicate accounts for same user
+
+### 🔒 Session Management
+- **Duration:** 10 minutes for OAuth flow
+- **Purpose:** Store state parameter securely
+- **Cleanup:** State cleared after successful authentication
+
+---
+
+**Error Handling:**
+
+| Error Code | Scenario | Message |
+|------------|----------|---------|
+| 403 Forbidden | State mismatch (CSRF) | "Invalid state parameter" |
+| 403 Forbidden | Email not verified by Google | "Please verify your email with Google" |
+| 401 Unauthorized | No email in profile | "Email is required for authentication" |
+| 429 Too Many Requests | Rate limit exceeded | "Too many OAuth attempts. Try again later." |
+
+---
+
+**Business Rules:**
+
+✅ User must use Google-verified email only  
+✅ Maximum 10 OAuth attempts per 15 minutes  
+✅ State parameter must match (CSRF protection)  
+✅ OAuth users get default tel: '0000000000' → Must complete profile  
+✅ Existing accounts can be linked via email  
+✅ Token stored in HTTP-only cookie (primary method)  
+✅ URL parameter used as fallback for development
 
 ---
 

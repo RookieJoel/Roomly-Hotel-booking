@@ -71,7 +71,31 @@ classDiagram
         -String clientID
         -String clientSecret
         -String callbackURL
-        +authenticate(accessToken, refreshToken, profile, done) void
+        -Boolean passReqToCallback
+        +authenticate(req, accessToken, refreshToken, profile, done) void
+        +validateEmail(profile) Boolean
+        +verifyState(req) Boolean
+        +findOrCreateUser(profile) User
+    }
+    
+    class SessionManager {
+        <<Middleware>>
+        -String secret
+        -Boolean resave
+        -Boolean saveUninitialized
+        -Object cookie
+        +generateState() String
+        +verifyState(state, sessionState) Boolean
+    }
+    
+    class SecurityMiddleware {
+        <<Middleware>>
+        +csrfProtection() Function
+        +rateLimit(options) Function
+        +cors(options) Function
+        +helmet() Function
+        +mongoSanitize() Function
+        +xssSanitizer() Function
     }
 
     User "1" --> "*" Booking : creates
@@ -83,11 +107,17 @@ classDiagram
     HotelController ..> Hotel : uses
     
     GoogleOAuthStrategy ..> User : creates/finds
+    GoogleOAuthStrategy ..> SessionManager : uses
     AuthMiddleware ..> User : validates
     
     AuthController ..> AuthMiddleware : protected by
+    AuthController ..> SecurityMiddleware : protected by
     BookingController ..> AuthMiddleware : protected by
+    BookingController ..> SecurityMiddleware : protected by
     HotelController ..> AuthMiddleware : protected by (admin)
+    HotelController ..> SecurityMiddleware : protected by
+    
+    SessionManager ..> SecurityMiddleware : part of
 ```
 
 ## Detailed Class Specifications
@@ -260,10 +290,44 @@ class AuthController {
      * Called by Passport after successful OAuth
      */
     + googleAuthCallback(req: Request, res: Response): Response {
-        // 1. User already authenticated by Passport
-        // 2. Generate JWT token
-        // 3. Set cookie
-        // 4. Return user data and token
+        // 1. Verify user exists (set by Passport)
+        // 2. Generate JWT token with user ID
+        // 3. Set HTTP-only cookie with security flags:
+        //    - httpOnly: true (prevent XSS)
+        //    - secure: true in production (HTTPS only)
+        //    - sameSite: 'lax' (allow OAuth redirect)
+        //    - expires: 30 days
+        // 4. Build user data object (without password)
+        // 5. Clear OAuth state from session (CSRF cleanup)
+        // 6. Redirect to frontend with encoded user data
+        // 7. Token sent both in cookie (primary) and URL (fallback)
+    }
+    
+    /**
+     * Forgot password - send reset email
+     * POST /api/v1/auth/forgotpassword
+     * Public route
+     */
+    + forgotPassword(req: Request, res: Response): Response {
+        // 1. Find user by email
+        // 2. Generate reset token
+        // 3. Save hashed token to database
+        // 4. Send email with reset link
+        // 5. Sanitize email to prevent XSS
+    }
+    
+    /**
+     * Reset password with token
+     * PUT /api/v1/auth/resetpassword/:resettoken
+     * Public route
+     */
+    + resetPassword(req: Request, res: Response): Response {
+        // 1. Hash token from URL
+        // 2. Find user with valid token
+        // 3. Verify token not expired
+        // 4. Update password
+        // 5. Clear reset token
+        // 6. Return JWT token
     }
 }
 ```
@@ -416,24 +480,50 @@ class GoogleOAuthStrategy {
     private clientID: String                 // From env: GOOGLE_CLIENT_ID
     private clientSecret: String             // From env: GOOGLE_CLIENT_SECRET
     private callbackURL: String              // From env: GOOGLE_CALLBACK_URL
+    private passReqToCallback: Boolean       // Enable req access in callback
     
     /**
-     * Authenticate user via Google OAuth
-     * Called by Passport.js
+     * Authenticate user via Google OAuth 2.0
+     * Called by Passport.js with enhanced security
      */
     + authenticate(
+        req: Request,
         accessToken: String,
         refreshToken: String,
         profile: Object,
         done: Function
     ): void {
-        // 1. Extract email from profile
-        // 2. Find user by email in database
-        // 3. If user exists: return user
-        // 4. If not exists:
+        // 1. Validate email exists in profile
+        // 2. Validate email is verified by Google
+        // 3. Verify state parameter (CSRF protection)
+        // 4. Find user by googleId (primary lookup)
+        // 5. If not found, find by email (fallback)
+        // 6. If user exists:
+        //    a. Update googleId if not set
+        //    b. Return existing user
+        // 7. If not exists:
         //    a. Extract name from profile
-        //    b. Generate random password
+        //    b. Generate cryptographically secure random password (64 chars)
         //    c. Store googleId from profile
+        //    d. Set default tel: '0000000000'
+        //    e. Create new user
+        // 8. Return user or error via done callback
+    }
+    
+    + validateEmail(profile: Object): Boolean {
+        // Validates email exists and is verified
+        // Throws error if validation fails
+    }
+    
+    + verifyState(req: Request): Boolean {
+        // Compares state from query with session
+        // Returns true if match, throws error if mismatch
+    }
+    
+    + findOrCreateUser(profile: Object): Promise<User> {
+        // Encapsulates user lookup/creation logic
+        // Returns user object or throws error
+    }
         //    d. Create new user
         // 5. Call done(null, user) on success
         // 6. Call done(error, null) on failure
@@ -441,14 +531,87 @@ class GoogleOAuthStrategy {
 }
 ```
 
-**OAuth Flow:**
+**Enhanced OAuth Flow with Security:**
 1. User clicks "Sign in with Google"
-2. Redirected to Google authentication
-3. User authorizes app
-4. Google redirects to callback URL
-5. Strategy receives profile data
-6. Strategy finds or creates user
-7. User is authenticated
+2. System generates CSRF state token
+3. State stored in server session
+4. Redirected to Google authentication with state
+5. User authorizes app
+6. Google redirects to callback URL with code + state
+7. System verifies state matches session (CSRF check)
+8. Passport exchanges code for access token
+9. Passport fetches user profile from Google
+10. Strategy validates email is verified
+11. Strategy finds or creates user
+12. JWT token generated
+13. HTTP-only cookie set with security flags
+14. User authenticated and redirected to frontend
+
+---
+
+### New Security Classes
+
+#### SessionManager
+```typescript
+class SessionManager {
+    private secret: String                   // Session secret
+    private resave: Boolean                  // false
+    private saveUninitialized: Boolean       // false
+    private cookie: {
+        secure: Boolean,                     // true in production
+        httpOnly: Boolean,                   // true
+        maxAge: Number                       // 10 minutes
+    }
+    
+    + generateState(): String {
+        // Generate cryptographically secure random state
+        // Uses crypto.randomBytes(32).toString('hex')
+    }
+    
+    + verifyState(state: String, sessionState: String): Boolean {
+        // Compare state parameter with session
+        // Returns true if match, false otherwise
+    }
+}
+```
+
+#### SecurityMiddleware
+```typescript
+class SecurityMiddleware {
+    + csrfProtection(): Function {
+        // CSRF protection using csrf-csrf package
+        // Generates and validates CSRF tokens
+    }
+    
+    + rateLimit(options: Object): Function {
+        // Rate limiting middleware
+        // Options: windowMs, max, message
+        // OAuth: 10 req/15min
+        // Auth: 5 req/15min
+    }
+    
+    + cors(options: Object): Function {
+        // CORS configuration
+        // Allows specific origins only
+        // Credentials: true
+    }
+    
+    + helmet(): Function {
+        // Security headers middleware
+        // Sets various HTTP headers
+    }
+    
+    + mongoSanitize(): Function {
+        // Prevents MongoDB injection
+        // Removes $ and . from input
+    }
+    
+    + xssSanitizer(): Function {
+        // XSS prevention
+        // Sanitizes user input
+    }
+}
+```
 
 ---
 

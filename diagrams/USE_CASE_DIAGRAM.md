@@ -74,19 +74,28 @@ graph TB
 - **Precondition:** User has Google account
 - **Main Flow:**
   1. User clicks "Sign in with Google"
-  2. System redirects to Google authentication
-  3. User authorizes the application
-  4. Google returns user profile
-  5. System checks if user exists by email
-  6. If not exists, system creates new user
-  7. System generates JWT token
-  8. System returns user data and token
+  2. System generates CSRF state parameter
+  3. System redirects to Google authentication
+  4. User authorizes the application
+  5. Google returns authorization code + state
+  6. System verifies state parameter (CSRF protection)
+  7. System exchanges code for access token
+  8. System fetches user profile from Google
+  9. System validates email is verified
+  10. System checks if user exists by googleId/email
+  11. If not exists, system creates new user with secure random password
+  12. System generates JWT token
+  13. System sets HTTP-only cookie with token
+  14. System redirects to frontend with user data
 - **Postcondition:** User is registered/logged in via OAuth
 - **Business Rules:**
-  - Email from Google is used as unique identifier
-  - Phone number is optional for OAuth users
-  - Random password is generated (not used)
+  - Email from Google must be verified
+  - Phone number defaults to '0000000000' for OAuth users
+  - Cryptographically secure random password generated (64 chars)
   - GoogleId is stored for future authentication
+  - State parameter validated to prevent CSRF attacks
+  - Token sent via HTTP-only cookie (secure)
+  - Rate limited to 10 attempts per 15 minutes
 
 ### UC3: Login (Basic Authentication)
 - **Actor:** Guest/User
@@ -107,16 +116,28 @@ graph TB
 - **Precondition:** User has Google account
 - **Main Flow:**
   1. User clicks "Sign in with Google"
-  2. System redirects to Google authentication
-  3. User authorizes the application
-  4. Google returns user profile
-  5. System finds existing user by email
-  6. System generates JWT token
-  7. System returns user data and token
+  2. System generates CSRF state parameter and stores in session
+  3. System redirects to Google OAuth page
+  4. User authorizes the application
+  5. Google returns authorization code + state to callback URL
+  6. System verifies state parameter matches session
+  7. Passport exchanges code for access token with Google
+  8. Passport fetches user profile from Google API
+  9. System validates email is verified by Google
+  10. System finds existing user by googleId (primary) or email (fallback)
+  11. If user found, updates googleId if not set
+  12. System generates JWT token (30-day expiration)
+  13. System sets HTTP-only cookie with security flags
+  14. System clears OAuth state from session
+  15. System redirects to frontend with user data
 - **Postcondition:** User is logged in via OAuth
 - **Business Rules:**
   - User must exist in database
   - If not exists, automatically registers (UC2)
+  - State parameter must match to prevent CSRF
+  - Cookie has httpOnly, secure (production), sameSite=lax flags
+  - Token also sent in URL as fallback for development
+  - Session expires after 10 minutes (OAuth flow only)
 
 ### UC5: View Hotels
 - **Actor:** User/Admin/Guest
@@ -254,9 +275,49 @@ graph TB
 
 ---
 
+## Security Features (Added)
+
+### CSRF Protection
+- **Implementation:** State parameter in OAuth flow
+- **Process:**
+  1. Generate cryptographically random state (64 chars)
+  2. Store in server session
+  3. Include in OAuth redirect
+  4. Verify on callback
+  5. Clear after successful auth
+
+### HTTP-Only Cookies
+- **Purpose:** Prevent XSS attacks
+- **Configuration:**
+  - httpOnly: true (JavaScript cannot read)
+  - secure: true (HTTPS only in production)
+  - sameSite: 'lax' (CSRF protection, allows OAuth redirect)
+  - path: '/' (accessible site-wide)
+  - expires: 30 days
+
+### Rate Limiting
+- **OAuth Routes:** 10 requests per 15 minutes per IP
+- **Purpose:** Prevent brute force and bot abuse
+
+### Email Verification
+- **Requirement:** Google email must be verified
+- **Purpose:** Ensure valid email addresses
+
+### Secure Password Generation
+- **Method:** crypto.randomBytes(32).toString('hex')
+- **Purpose:** Cryptographically secure random passwords for OAuth users
+
+### Session Management
+- **Duration:** 10 minutes for OAuth flow
+- **Storage:** Server-side (requires express-session)
+- **Purpose:** Store CSRF state temporarily
+
+---
+
 ## Notes for Presentation
 1. This diagram shows **Requirements 1-3** implementation only
 2. **Requirements 4-9** (view/edit/delete bookings) are **NOT implemented**
-3. **Google OAuth** is an enhancement beyond original requirements
+3. **Google OAuth** is an enhancement beyond original requirements with **enterprise-grade security**
 4. **JWT Authentication** is a cross-cutting concern used by multiple use cases
 5. System focuses on **booking creation only**, not management
+6. **Security features** follow OWASP best practices and OAuth 2.0 RFC 6749
