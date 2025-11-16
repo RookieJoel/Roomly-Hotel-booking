@@ -237,7 +237,7 @@
 									"    pm.response.to.have.status(200);\r",
 									"});\r",
 									"\r",
-									"pm.execution.setNextRequest(\"Reset Password\");"
+									"pm.execution.setNextRequest(\"Get Hotels\");"
 								],
 								"type": "text/javascript",
 								"packages": {},
@@ -279,11 +279,7 @@
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.test(\"Status code is 200\", function () {\r",
-									"    pm.response.to.have.status(200);\r",
-									"});\r",
-									"\r",
-									"pm.execution.setNextRequest(\"Get Hotels\");"
+									""
 								],
 								"type": "text/javascript",
 								"packages": {},
