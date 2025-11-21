@@ -102,7 +102,7 @@ const Bookings = () => {
       }
     } catch (error) {
       console.error('Error updating booking:', error);
-      toast.error('Failed to update booking');
+      toast.error(error.response?.data?.message || 'Failed to update booking');
     }
   };
 
