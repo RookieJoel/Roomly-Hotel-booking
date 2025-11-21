@@ -58,7 +58,9 @@ exports.getBooking = async (req, res, next) => {
             return res.status(404).json({ success: false , message : `No booking with this id` });
         }
         // Authorization: only admins can fetch any booking; normal users may only fetch their own
-        if (req.user.role !== 'admin' && booking.user._id.toString() !== req.user.id) {
+        const bookingUserId = booking.user && (booking.user._id ? booking.user._id.toString() : booking.user.toString());
+        const requesterId = req.user && (req.user._id ? req.user._id.toString() : req.user.id);
+        if (req.user.role !== 'admin' && bookingUserId !== requesterId) {
             return res.status(401).json({ success: false, message: 'Not authorized to view this booking' });
         }
         res.status(200).json({ success: true, data: booking });
@@ -82,13 +84,23 @@ exports.addBooking = async (req, res, next) => {
         //add user Id to req.body
         req.body.user = req.user.id;
 
-        // Validate booking date is not in the past
-        if (req.body.bookingDate) {
-            const bookingDate = new Date(req.body.bookingDate);
+        // If checkoutDate provided, compute numOfNights; otherwise expect numOfNights
+        if (req.body.checkoutDate && req.body.bookingDate) {
+            const checkIn = new Date(req.body.bookingDate);
+            const checkOut = new Date(req.body.checkoutDate);
+            const msPerDay = 24 * 60 * 60 * 1000;
+            const nights = Math.round((checkOut - checkIn) / msPerDay);
             const now = new Date();
             const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            if (bookingDate < today) {
+            if (checkIn < today) {
                 return res.status(400).json({ success: false, message: 'You can only book for now or future.' });
+            }
+            if (checkOut < checkIn) {
+                return res.status(400).json({ success: false, message: 'Check out date cannot be before check in date.' });
+            }
+            // enforce maximum nights rule on server side as well
+            if (nights > 3) {
+                return res.status(400).json({ success: false, message: 'You can only book up to 3 nights.' });
             }
         }
 
@@ -104,10 +116,6 @@ exports.addBooking = async (req, res, next) => {
         });
     } catch (error) {
         console.log(error.stack);
-        // Return validation errors from model
-        if (error.name === 'ValidationError' || error.message.includes('night')) {
-            return res.status(400).json({ success: false, message: error.message });
-        }
         return res.status(500).json({ success: false, message: 'Cannot create Booking' });
     }
 };
@@ -121,9 +129,47 @@ exports.updateBooking = async (req, res, next) => {
         if (!booking) {
             return res.status(404).json({ success: false, message: `No booking with this id` });
         }
-        //make sure user is booking owner
-        if (booking.user.toString() !== req.user.id && req.user.role !== 'admin') {
+        // make sure user is booking owner (handle populated user or ObjectId)
+        const bookingUserId = booking.user && (booking.user._id ? booking.user._id.toString() : booking.user.toString());
+        const requesterId = req.user && (req.user._id ? req.user._id.toString() : req.user.id);
+        if (req.user.role !== 'admin' && bookingUserId !== requesterId) {
             return res.status(401).json({ success: false, message: `This user is not authorized to update this booking` });
+        }
+
+        // Validate updated dates / nights: ensure not booking past dates and not exceeding 3 nights
+        // Determine effective checkIn and checkOut after update
+        const msPerDay = 24 * 60 * 60 * 1000;
+        let effectiveCheckIn = booking.bookingDate ? new Date(booking.bookingDate) : null;
+        let effectiveCheckOut = booking.checkoutDate ? new Date(booking.checkoutDate) : null;
+
+        if (req.body.bookingDate) effectiveCheckIn = new Date(req.body.bookingDate);
+        if (req.body.checkoutDate) effectiveCheckOut = new Date(req.body.checkoutDate);
+
+        // If we have an effective check-in date, ensure it's today or future
+        if (effectiveCheckIn) {
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            if (effectiveCheckIn < today) {
+                return res.status(400).json({ success: false, message: 'You can only book for now or future.' });
+            }
+        }
+
+        // If both dates available, validate ordering and nights
+        if (effectiveCheckIn && effectiveCheckOut) {
+            if (effectiveCheckOut < effectiveCheckIn) {
+                return res.status(400).json({ success: false, message: 'Check out date cannot be before check in date.' });
+            }
+            const nights = Math.round((effectiveCheckOut - effectiveCheckIn) / msPerDay);
+            if (nights > 3) {
+                return res.status(400).json({ success: false, message: 'You can only book up to 3 nights.' });
+            }
+        }
+
+        // If client provided numOfNights directly in the update, validate it
+        if (req.body.numOfNights) {
+            if (req.body.numOfNights > 3) {
+                return res.status(400).json({ success: false, message: 'You can only book up to 3 nights.' });
+            }
         }
         booking = await Booking.findByIdAndUpdate(req.params.id, req.body, {
             new: true,
@@ -149,8 +195,10 @@ exports.deleteBooking = async (req, res, next) => {
             return res.status(404).json({ success: false, message: `No booking with this id` });
         }
         
-        //make sure user is booking owner
-        if (booking.user.toString() !== req.user.id && req.user.role !== 'admin') {
+        // make sure user is booking owner (handle populated user or ObjectId)
+        const bookingUserId = booking.user && (booking.user._id ? booking.user._id.toString() : booking.user.toString());
+        const requesterId = req.user && (req.user._id ? req.user._id.toString() : req.user.id);
+        if (req.user.role !== 'admin' && bookingUserId !== requesterId) {
             return res.status(401).json({ success: false, message: `This user is not authorized to delete this booking` });
         }
         
