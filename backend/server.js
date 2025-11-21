@@ -51,6 +51,7 @@ app.use(cors({
 app.use(express.json());
 
 // Session configuration - REQUIRED for OAuth state parameter
+// IMPORTANT: Must be before passport.initialize()
 app.use(session({
     secret: process.env.SESSION_SECRET || 'your-secret-key-change-in-production',
     resave: false,
@@ -63,7 +64,9 @@ app.use(session({
 }));
 
 // Initialize Passport
+// CRITICAL: passport.session() must be called AFTER passport.initialize()
 app.use(passport.initialize());
+app.use(passport.session()); // REQUIRED for persistent login sessions
 
 //Sanitize data (wrap to avoid throwing when req.query is a getter-only property)
 app.use((req, res, next) => {

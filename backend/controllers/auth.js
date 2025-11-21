@@ -179,9 +179,14 @@ const sendTokenResponse = (user, statusCode, res) => {
 
 exports.getMe = async (req, res, next) => {
   const user = await User.findById(req.user.id);
+  
+  // Generate fresh token for OAuth callback flow
+  const token = user.getSignedJwtToken();
+  
   res.status(200).json({
     success: true,
     data: user,
+    token: token // Include token for OAuth callback
   });
 };
 
@@ -222,47 +227,41 @@ exports.googleAuthCallback = async (req, res) => {
     const token = req.user.getSignedJwtToken();
     console.log('✅ Token generated:', token.substring(0, 20) + '...');
 
-    // BEST PRACTICE: Set token as HTTP-only cookie instead of URL parameter
+    // Set token as HTTP-only cookie (security best practice)
     const options = {
       expires: new Date(
         Date.now() + process.env.JWT_COOKIE_EXPIRE * 24 * 60 * 60 * 1000
       ),
       httpOnly: true, // Prevent XSS attacks
       secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-      sameSite: 'lax', // Changed from 'strict' to 'lax' - allows cookie on OAuth redirect
-      path: '/'
+      sameSite: 'lax', // Allow cookie on OAuth redirect
+      path: '/',
+      domain: 'localhost' // Explicit domain for development
     };
 
-    console.log('🍪 Cookie options:', {
+    console.log('🍪 Setting cookie with options:', {
       ...options,
       expires: options.expires.toISOString(),
-      secure: options.secure,
-      sameSite: options.sameSite,
       nodeEnv: process.env.NODE_ENV
     });
 
-    // Set token in HTTP-only cookie (primary method)
     res.cookie('token', token, options);
-    console.log('✅ Cookie set with name: token');
+    console.log('✅ Cookie set with name: token, httpOnly: true (secure)');
 
-    // Build minimal user data for URL (NO TOKEN - to prevent header size issues)
-    // Token is in HTTP-only cookie - frontend should read from cookie
+    // Pass user data WITHOUT token in URL
     const userData = {
       _id: req.user._id,
       name: req.user.name,
       email: req.user.email,
       tel: req.user.tel || null,
       role: req.user.role || 'user'
-      // NOTE: Token NOT included in URL to prevent "Request header too large" error
-      // Frontend MUST read token from cookie using document.cookie
     };
 
-    // Pass minimal user data in URL (without token)
     const encoded = encodeURIComponent(JSON.stringify(userData));
     const redirectUrl = `${frontendUrl}/auth/google/callback?googleAuth=true&data=${encoded}`;
     
     console.log('🔄 Redirecting to:', redirectUrl.substring(0, 100) + '...');
-    console.log('✅ Token sent via HTTP-only cookie only (not in URL)');
+    console.log('✅ Token sent via cookie ONLY (not in URL)');
     
     // Clear OAuth state from session
     if (req.session?.oauthState) {

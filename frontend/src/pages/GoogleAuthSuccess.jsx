@@ -40,30 +40,43 @@ const GoogleAuthSuccess = ({ setUser }) => {
           const { name, email, _id, tel, role } = userData;
           console.log('Extracted values - name:', name, 'email:', email, '_id:', _id, 'tel:', tel, 'role:', role);
 
-          // Debug: Check all cookies
-          console.log('All cookies:', document.cookie);
+          // Wait a moment for cookie to be set by redirect
+          await new Promise(resolve => setTimeout(resolve, 100));
 
-          // Get token from HTTP-only cookie (set by backend)
-          const token = getCookie('token');
-          
-          console.log('Token from cookie:', token ? 'Found (' + token.substring(0, 20) + '...)' : 'Not found');
-          
-          if (!token) {
-            console.error('❌ No token found in cookie');
-            console.error('Possible causes:');
-            console.error('1. Cookie not set by backend');
-            console.error('2. SameSite cookie policy blocking');
-            console.error('3. CORS credentials not enabled');
-            console.error('4. Domain mismatch between frontend/backend');
+          // Call backend to get token from HTTP-only cookie
+          console.log('Fetching token from backend...');
+          const response = await fetch('http://localhost:8080/api/v1/auth/me', {
+            method: 'GET',
+            credentials: 'include', // Send cookies with request
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+
+          console.log('Response status:', response.status);
+
+          if (!response.ok) {
+            console.error('❌ Failed to verify authentication');
+            console.error('Response status:', response.status);
+            toast.error('Authentication failed. Please try again.');
+            navigate('/login');
+            return;
+          }
+
+          const authData = await response.json();
+          console.log('Auth data:', authData);
+
+          if (!authData.success || !authData.token) {
+            console.error('❌ No token in response');
             toast.error('Authentication failed. No token received.');
             navigate('/login');
             return;
           }
 
-          console.log('✅ Token acquired from cookie successfully');
+          const token = authData.token;
+          console.log('✅ Token acquired from backend:', token.substring(0, 20) + '...');
 
           // Save token to localStorage for axios interceptor
-          // Note: In production, consider using the cookie directly
           localStorage.setItem('token', token);
           localStorage.setItem('user', JSON.stringify({ name, email, _id, role }));
 
