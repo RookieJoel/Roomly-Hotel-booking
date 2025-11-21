@@ -16,26 +16,7 @@
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.test(\"Status code is 200\", function () {\r",
-									"    pm.response.to.have.status(200);\r",
-									"});\r",
-									"\r",
-									"let response;\r",
-									"try {\r",
-									"    response = pm.response.json();\r",
-									"} catch (e) {\r",
-									"    response = {};\r",
-									"}\r",
-									"\r",
-									"const new_user_id = response.id;\r",
-									"const new_username = typeof response.name === 'string' ? response.name : '';\r",
-									"const new_email = typeof response.email === 'string' ? response.email : '';\r",
-									"\r",
-									"pm.globals.set(\"global_user_id\", new_user_id);\r",
-									"pm.globals.set(\"global_username\", new_username);\r",
-									"pm.globals.set(\"global_email\", new_email);\r",
-									"\r",
-									"pm.execution.setNextRequest(\"User Login\");"
+									""
 								],
 								"type": "text/javascript",
 								"packages": {},
@@ -84,129 +65,7 @@
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.environment.set(\"TOKEN\", pm.response.json().token)\r",
-									"\r",
-									"pm.test(\"Status code is 200\", function () {\r",
-									"    pm.response.to.have.status(200);\r",
-									"});\r",
-									"\r",
-									"pm.execution.setNextRequest(\"Get Logged In User\");"
-								],
-								"type": "text/javascript",
-								"packages": {},
-								"requests": {}
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\r\n    \"email\": \"{{global_email}}\",\r\n    \"password\": \"12345678\"\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{URL}}/api/v1/auth/login",
-							"host": [
-								"{{URL}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"auth",
-								"login"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Admin Register",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status code is 200\", function () {\r",
-									"    pm.response.to.have.status(200);\r",
-									"});\r",
-									"\r",
-									"let response;\r",
-									"try {\r",
-									"    response = pm.response.json();\r",
-									"} catch (e) {\r",
-									"    response = {};\r",
-									"}\r",
-									"\r",
-									"const new_user_id = response.id;\r",
-									"const new_username = typeof response.name === 'string' ? response.name : '';\r",
-									"const new_email = typeof response.email === 'string' ? response.email : '';\r",
-									"\r",
-									"pm.globals.set(\"global_user_id\", new_user_id);\r",
-									"pm.globals.set(\"global_username\", new_username);\r",
-									"pm.globals.set(\"global_email\", new_email);\r",
-									"\r",
-									"pm.execution.setNextRequest(\"Admin Login\");"
-								],
-								"type": "text/javascript",
-								"packages": {},
-								"requests": {}
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json",
-								"description": "JSON Type",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\r\n    \"name\": \"{{$randomFullName}}\",\r\n    \"email\": \"{{$randomEmail}}\",\r\n    \"password\": \"12345678\",\r\n    \"tel\": \"0123456789\",\r\n    \"role\": \"admin\"\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{URL}}/api/v1/auth/register",
-							"host": [
-								"{{URL}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"auth",
-								"register"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Admin Login",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.environment.set(\"TOKEN\", pm.response.json().token)\r",
-									"\r",
-									"pm.test(\"Status code is 200\", function () {\r",
-									"    pm.response.to.have.status(200);\r",
-									"});\r",
-									"\r",
-									"pm.execution.setNextRequest(\"Get Logged In User\");"
+									""
 								],
 								"type": "text/javascript",
 								"packages": {},
@@ -248,11 +107,7 @@
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.test(\"Status code is 200\", function () {\r",
-									"    pm.response.to.have.status(200);\r",
-									"});\r",
-									"\r",
-									"pm.execution.setNextRequest(\"Get Hotels\");"
+									""
 								],
 								"type": "text/javascript",
 								"packages": {},
@@ -302,11 +157,7 @@
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.test(\"Status code is 200\", function () {\r",
-									"    pm.response.to.have.status(200);\r",
-									"});\r",
-									"\r",
-									"pm.execution.setNextRequest(null);"
+									""
 								],
 								"type": "text/javascript",
 								"packages": {},
@@ -445,19 +296,7 @@
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.test(\"Status code is 200\", function () {\r",
-									"    pm.response.to.have.status(200);\r",
-									"});\r",
-									"\r",
-									"const response = pm.response.json();\r",
-									"\r",
-									"console.log(response);\r",
-									"\r",
-									"pm.test(\"There are some hotels!!\", () => {\r",
-									"    pm.expect(response.count).to.be.above(0);\r",
-									"});\r",
-									"\r",
-									"pm.execution.setNextRequest(\"Create Hotel\");"
+									""
 								],
 								"type": "text/javascript",
 								"packages": {},
@@ -490,11 +329,7 @@
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.test(\"Status code is 200\", function () {\r",
-									"    pm.response.to.have.status(200);\r",
-									"});\r",
-									"\r",
-									"pm.execution.setNextRequest(\"Update Hotel\");"
+									""
 								],
 								"type": "text/javascript",
 								"packages": {},
@@ -533,15 +368,7 @@
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.test(\"Status code is 201\", function () {\r",
-									"    pm.response.to.have.status(201);\r",
-									"});\r",
-									"\r",
-									"const response = pm.response.json();\r",
-									"const new_hotel_id = response.data.id;\r",
-									"pm.globals.set(\"global_hotel_ID\", new_hotel_id);\r",
-									"\r",
-									"pm.execution.setNextRequest(\"Get Single Hotel\");"
+									""
 								],
 								"type": "text/javascript",
 								"packages": {},
@@ -592,11 +419,7 @@
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.test(\"Status code is 200\", function () {\r",
-									"    pm.response.to.have.status(200);\r",
-									"});\r",
-									"\r",
-									"pm.execution.setNextRequest(\"Get Bookings\");"
+									""
 								],
 								"type": "text/javascript",
 								"packages": {},
@@ -645,11 +468,7 @@
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.test(\"Status code is 200\", function () {\r",
-									"    pm.response.to.have.status(200);\r",
-									"});\r",
-									"\r",
-									"pm.execution.setNextRequest(\"Logout\");"
+									""
 								],
 								"type": "text/javascript",
 								"packages": {},
@@ -703,19 +522,7 @@
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.test(\"Status code is 200\", function () {\r",
-									"    pm.response.to.have.status(200);\r",
-									"});\r",
-									"\r",
-									"const response = pm.response.json();\r",
-									"\r",
-									"console.log(response);\r",
-									"\r",
-									"pm.test(\"There are some bookings!!\", () => {\r",
-									"    pm.expect(response.count).to.be.above(0);\r",
-									"});\r",
-									"\r",
-									"pm.execution.setNextRequest(\"Create Booking\");"
+									""
 								],
 								"type": "text/javascript",
 								"packages": {},
@@ -758,11 +565,7 @@
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.test(\"Status code is 200\", function () {\r",
-									"    pm.response.to.have.status(200);\r",
-									"});\r",
-									"\r",
-									"pm.execution.setNextRequest(\"Update Booking\");"
+									""
 								],
 								"type": "text/javascript",
 								"packages": {},
@@ -811,24 +614,7 @@
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.test(\"Status code is 200\", function () {\r",
-									"    pm.response.to.have.status(200);\r",
-									"});\r",
-									"\r",
-									"try {\r",
-									"    const response = pm.response.json();\r",
-									"    console.log(\"Response:\", response);\r",
-									"    if (response.data && response.data._id) {\r",
-									"        pm.globals.set(\"global_booking_ID\", response.data._id);\r",
-									"        console.log(\"Set global_booking_ID:\", response.data._id);\r",
-									"    } else {\r",
-									"        console.log(\"Booking ID not found in response.\");\r",
-									"    }\r",
-									"} catch (e) {\r",
-									"    console.log(\"Error parsing response or setting variable:\", e);\r",
-									"}\r",
-									"\r",
-									"pm.execution.setNextRequest(\"Get Single Booking\");"
+									""
 								],
 								"type": "text/javascript",
 								"packages": {},
@@ -887,11 +673,7 @@
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.test(\"Status code is 200\", function () {\r",
-									"    pm.response.to.have.status(200);\r",
-									"});\r",
-									"\r",
-									"pm.execution.setNextRequest(\"Delete Booking\");"
+									""
 								],
 								"type": "text/javascript",
 								"packages": {},
@@ -940,11 +722,7 @@
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.test(\"Status code is 200\", function () {\r",
-									"    pm.response.to.have.status(200);\r",
-									"});\r",
-									"\r",
-									"pm.execution.setNextRequest(\"Delete Hotel\");"
+									""
 								],
 								"type": "text/javascript",
 								"packages": {},
@@ -1121,7 +899,7 @@
 											"    pm.response.to.have.status(200);\r",
 											"});\r",
 											"\r",
-											"pm.execution.setNextRequest(\"Get Bookings\");"
+											"pm.execution.setNextRequest(\"User Get Bookings Before Create\");"
 										],
 										"type": "text/javascript",
 										"packages": {},
@@ -1165,7 +943,7 @@
 							"response": []
 						},
 						{
-							"name": "Logout",
+							"name": "User Logout",
 							"event": [
 								{
 									"listen": "test",
@@ -1217,7 +995,7 @@
 					"name": "Bookings",
 					"item": [
 						{
-							"name": "Get Bookings",
+							"name": "User Get Bookings Before Create",
 							"event": [
 								{
 									"listen": "test",
@@ -1231,11 +1009,11 @@
 											"\r",
 											"console.log(response);\r",
 											"\r",
-											"pm.test(\"There are some bookings!!\", () => {\r",
-											"    pm.expect(response.count).to.be.above(0);\r",
+											"pm.test(\"New user don't have any bookings!!\", () => {\r",
+											"    pm.expect(response.count).to.eql(0);\r",
 											"});\r",
 											"\r",
-											"pm.execution.setNextRequest(\"Create Booking\");"
+											"pm.execution.setNextRequest(\"User Create Booking\");"
 										],
 										"type": "text/javascript",
 										"packages": {},
@@ -1272,7 +1050,7 @@
 							"response": []
 						},
 						{
-							"name": "Get Bookings After Create",
+							"name": "User Get Bookings After Create",
 							"event": [
 								{
 									"listen": "test",
@@ -1290,7 +1068,7 @@
 											"    pm.expect(response.count).to.be.above(0);\r",
 											"});\r",
 											"\r",
-											"pm.execution.setNextRequest(\"Get Single Booking\");"
+											"pm.execution.setNextRequest(\"User Get Single Booking\");"
 										],
 										"type": "text/javascript",
 										"packages": {},
@@ -1327,7 +1105,7 @@
 							"response": []
 						},
 						{
-							"name": "Get Single Booking",
+							"name": "User Get Single Booking",
 							"event": [
 								{
 									"listen": "test",
@@ -1337,7 +1115,7 @@
 											"    pm.response.to.have.status(200);\r",
 											"});\r",
 											"\r",
-											"pm.execution.setNextRequest(\"Update Booking\");"
+											"pm.execution.setNextRequest(\"User Update Booking\");"
 										],
 										"type": "text/javascript",
 										"packages": {},
@@ -1380,7 +1158,7 @@
 							"response": []
 						},
 						{
-							"name": "Create Booking",
+							"name": "User Create Booking",
 							"event": [
 								{
 									"listen": "test",
@@ -1403,7 +1181,7 @@
 											"    console.log(\"Error parsing response or setting variable:\", e);\r",
 											"}\r",
 											"\r",
-											"pm.execution.setNextRequest(\"Get Bookings After Create\");"
+											"pm.execution.setNextRequest(\"User Get Bookings After Create\");"
 										],
 										"type": "text/javascript",
 										"packages": {},
@@ -1456,7 +1234,7 @@
 							"response": []
 						},
 						{
-							"name": "Update Booking",
+							"name": "User Update Booking",
 							"event": [
 								{
 									"listen": "test",
@@ -1466,7 +1244,7 @@
 											"    pm.response.to.have.status(200);\r",
 											"});\r",
 											"\r",
-											"pm.execution.setNextRequest(\"Delete Booking\");"
+											"pm.execution.setNextRequest(\"User Delete Booking\");"
 										],
 										"type": "text/javascript",
 										"packages": {},
@@ -1518,7 +1296,7 @@
 							"response": []
 						},
 						{
-							"name": "Delete Booking",
+							"name": "User Delete Booking",
 							"event": [
 								{
 									"listen": "test",
@@ -1528,7 +1306,7 @@
 											"    pm.response.to.have.status(200);\r",
 											"});\r",
 											"\r",
-											"pm.execution.setNextRequest(\"Logout\");"
+											"pm.execution.setNextRequest(\"User Logout\");"
 										],
 										"type": "text/javascript",
 										"packages": {},
@@ -1661,7 +1439,7 @@
 											"    pm.response.to.have.status(200);\r",
 											"});\r",
 											"\r",
-											"pm.execution.setNextRequest(\"Get Logged In User\");"
+											"pm.execution.setNextRequest(\"Get Logged In Admin\");"
 										],
 										"type": "text/javascript",
 										"packages": {},
@@ -1697,7 +1475,7 @@
 							"response": []
 						},
 						{
-							"name": "Get Logged In User",
+							"name": "Get Logged In Admin",
 							"event": [
 								{
 									"listen": "test",
@@ -1707,7 +1485,7 @@
 											"    pm.response.to.have.status(200);\r",
 											"});\r",
 											"\r",
-											"pm.execution.setNextRequest(\"Get Bookings\");"
+											"pm.execution.setNextRequest(\"Admin Get Bookings\");"
 										],
 										"type": "text/javascript",
 										"packages": {},
@@ -1751,7 +1529,7 @@
 							"response": []
 						},
 						{
-							"name": "Logout",
+							"name": "Admin Logout",
 							"event": [
 								{
 									"listen": "test",
@@ -1803,7 +1581,7 @@
 					"name": "Bookings",
 					"item": [
 						{
-							"name": "Get Bookings",
+							"name": "Admin Get Bookings",
 							"event": [
 								{
 									"listen": "test",
@@ -1817,11 +1595,11 @@
 											"\r",
 											"console.log(response);\r",
 											"\r",
-											"pm.test(\"There are some bookings!!\", () => {\r",
+											"pm.test(\"There are some bookings in the server!!\", () => {\r",
 											"    pm.expect(response.count).to.be.above(0);\r",
 											"});\r",
 											"\r",
-											"pm.execution.setNextRequest(\"Create Booking\");"
+											"pm.execution.setNextRequest(\"Admin Create Booking\");"
 										],
 										"type": "text/javascript",
 										"packages": {},
@@ -1858,7 +1636,7 @@
 							"response": []
 						},
 						{
-							"name": "Get Bookings After Create",
+							"name": "Admin Get Single Booking",
 							"event": [
 								{
 									"listen": "test",
@@ -1868,62 +1646,7 @@
 											"    pm.response.to.have.status(200);\r",
 											"});\r",
 											"\r",
-											"const response = pm.response.json();\r",
-											"\r",
-											"console.log(response);\r",
-											"\r",
-											"pm.test(\"There are some bookings!!\", () => {\r",
-											"    pm.expect(response.count).to.be.above(0);\r",
-											"});\r",
-											"\r",
-											"pm.execution.setNextRequest(\"Get Single Booking\");"
-										],
-										"type": "text/javascript",
-										"packages": {},
-										"requests": {}
-									}
-								}
-							],
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{TOKEN}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{URL}}/api/v1/bookings/",
-									"host": [
-										"{{URL}}"
-									],
-									"path": [
-										"api",
-										"v1",
-										"bookings",
-										""
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "Get Single Booking",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"exec": [
-											"pm.test(\"Status code is 200\", function () {\r",
-											"    pm.response.to.have.status(200);\r",
-											"});\r",
-											"\r",
-											"pm.execution.setNextRequest(\"Update Booking\");"
+											"pm.execution.setNextRequest(\"Admin Update Booking\");"
 										],
 										"type": "text/javascript",
 										"packages": {},
@@ -1966,7 +1689,7 @@
 							"response": []
 						},
 						{
-							"name": "Create Booking",
+							"name": "Admin Create Booking",
 							"event": [
 								{
 									"listen": "test",
@@ -1989,7 +1712,7 @@
 											"    console.log(\"Error parsing response or setting variable:\", e);\r",
 											"}\r",
 											"\r",
-											"pm.execution.setNextRequest(\"Get Bookings After Create\");"
+											"pm.execution.setNextRequest(\"Admin Get Single Booking\");"
 										],
 										"type": "text/javascript",
 										"packages": {},
@@ -2042,7 +1765,7 @@
 							"response": []
 						},
 						{
-							"name": "Update Booking",
+							"name": "Admin Update Booking",
 							"event": [
 								{
 									"listen": "test",
@@ -2052,7 +1775,7 @@
 											"    pm.response.to.have.status(200);\r",
 											"});\r",
 											"\r",
-											"pm.execution.setNextRequest(\"Delete Booking\");"
+											"pm.execution.setNextRequest(\"Admin Delete Booking\");"
 										],
 										"type": "text/javascript",
 										"packages": {},
@@ -2104,7 +1827,7 @@
 							"response": []
 						},
 						{
-							"name": "Delete Booking",
+							"name": "Admin Delete Booking",
 							"event": [
 								{
 									"listen": "test",
@@ -2114,7 +1837,7 @@
 											"    pm.response.to.have.status(200);\r",
 											"});\r",
 											"\r",
-											"pm.execution.setNextRequest(\"Logout\");"
+											"pm.execution.setNextRequest(\"Admin Logout\");"
 										],
 										"type": "text/javascript",
 										"packages": {},
@@ -2162,7 +1885,7 @@
 					"name": "Bookings",
 					"item": [
 						{
-							"name": "Get Bookings",
+							"name": "Admin Get Bookings",
 							"event": [
 								{
 									"listen": "test",
@@ -2176,11 +1899,11 @@
 											"\r",
 											"console.log(response);\r",
 											"\r",
-											"pm.test(\"There are some bookings!!\", () => {\r",
+											"pm.test(\"There are some bookings in the server!!\", () => {\r",
 											"    pm.expect(response.count).to.be.above(0);\r",
 											"});\r",
 											"\r",
-											"pm.execution.setNextRequest(\"Create Booking\");"
+											"pm.execution.setNextRequest(\"Admin Create Booking\");"
 										],
 										"type": "text/javascript",
 										"packages": {},
@@ -2217,7 +1940,7 @@
 							"response": []
 						},
 						{
-							"name": "Get Bookings After Create",
+							"name": "Admin Get Single Booking",
 							"event": [
 								{
 									"listen": "test",
@@ -2227,62 +1950,7 @@
 											"    pm.response.to.have.status(200);\r",
 											"});\r",
 											"\r",
-											"const response = pm.response.json();\r",
-											"\r",
-											"console.log(response);\r",
-											"\r",
-											"pm.test(\"There are some bookings!!\", () => {\r",
-											"    pm.expect(response.count).to.be.above(0);\r",
-											"});\r",
-											"\r",
-											"pm.execution.setNextRequest(\"Get Single Booking\");"
-										],
-										"type": "text/javascript",
-										"packages": {},
-										"requests": {}
-									}
-								}
-							],
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{TOKEN}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{URL}}/api/v1/bookings/",
-									"host": [
-										"{{URL}}"
-									],
-									"path": [
-										"api",
-										"v1",
-										"bookings",
-										""
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "Get Single Booking",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"exec": [
-											"pm.test(\"Status code is 200\", function () {\r",
-											"    pm.response.to.have.status(200);\r",
-											"});\r",
-											"\r",
-											"pm.execution.setNextRequest(\"Update Booking\");"
+											"pm.execution.setNextRequest(\"Admin Update Booking\");"
 										],
 										"type": "text/javascript",
 										"packages": {},
@@ -2325,7 +1993,7 @@
 							"response": []
 						},
 						{
-							"name": "Create Booking",
+							"name": "Admin Create Booking",
 							"event": [
 								{
 									"listen": "test",
@@ -2348,7 +2016,7 @@
 											"    console.log(\"Error parsing response or setting variable:\", e);\r",
 											"}\r",
 											"\r",
-											"pm.execution.setNextRequest(\"Get Bookings After Create\");"
+											"pm.execution.setNextRequest(\"Admin Get Single Booking\");"
 										],
 										"type": "text/javascript",
 										"packages": {},
@@ -2401,7 +2069,7 @@
 							"response": []
 						},
 						{
-							"name": "Update Booking",
+							"name": "Admin Update Booking",
 							"event": [
 								{
 									"listen": "test",
@@ -2411,7 +2079,7 @@
 											"    pm.response.to.have.status(200);\r",
 											"});\r",
 											"\r",
-											"pm.execution.setNextRequest(\"Delete Booking\");"
+											"pm.execution.setNextRequest(\"Admin Delete Booking\");"
 										],
 										"type": "text/javascript",
 										"packages": {},
@@ -2463,7 +2131,7 @@
 							"response": []
 						},
 						{
-							"name": "Delete Booking",
+							"name": "Admin Delete Booking",
 							"event": [
 								{
 									"listen": "test",
@@ -2473,7 +2141,7 @@
 											"    pm.response.to.have.status(200);\r",
 											"});\r",
 											"\r",
-											"pm.execution.setNextRequest(\"Logout\");"
+											"pm.execution.setNextRequest(\"Admin Logout\");"
 										],
 										"type": "text/javascript",
 										"packages": {},
@@ -2547,7 +2215,7 @@
 	"variable": [
 		{
 			"key": "URL",
-			"value": ""
+			"value": "http://localhost:8080"
 		},
 		{
 			"key": "TOKEN",
