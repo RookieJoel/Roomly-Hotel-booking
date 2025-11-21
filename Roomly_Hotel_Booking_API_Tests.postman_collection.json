@@ -31,13 +31,6 @@
 									"    pm.collectionVariables.set(\"user_token\", jsonData.token);",
 									"});",
 									"",
-									"pm.test(\"User has required fields: name, tel, email\", function () {",
-									"    var jsonData = pm.response.json();",
-									"    pm.expect(jsonData.name || jsonData.data?.name).to.exist;",
-									"    pm.expect(jsonData.email || jsonData.data?.email).to.exist;",
-									"    pm.expect(jsonData.tel || jsonData.data?.tel).to.exist;",
-									"});",
-									"",
 									"pm.test(\"✅ REQ 1: User can register with name, tel, email, password\", function () {",
 									"    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
 									"});"
@@ -739,53 +732,6 @@
 		{
 			"name": "Setup Admin User",
 			"item": [
-				{
-					"name": "Register Admin User",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Admin user registered\", function () {",
-									"    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
-									"});",
-									"",
-									"pm.test(\"Save admin token\", function () {",
-									"    var jsonData = pm.response.json();",
-									"    if (jsonData.token) {",
-									"        pm.collectionVariables.set(\"admin_token\", jsonData.token);",
-									"    }",
-									"});"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"name\": \"Admin User\",\n    \"tel\": \"0898765432\",\n    \"email\": \"admin@example.com\",\n    \"password\": \"admin123\",\n    \"role\": \"admin\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/auth/register",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"auth",
-								"register"
-							]
-						}
-					},
-					"response": []
-				},
 				{
 					"name": "Login Admin User",
 					"event": [

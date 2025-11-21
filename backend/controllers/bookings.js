@@ -58,7 +58,7 @@ exports.getBooking = async (req, res, next) => {
             return res.status(404).json({ success: false , message : `No booking with this id` });
         }
         // Authorization: only admins can fetch any booking; normal users may only fetch their own
-        if (req.user.role !== 'admin' && booking.user.toString() !== req.user.id) {
+        if (req.user.role !== 'admin' && booking.user._id.toString() !== req.user.id) {
             return res.status(401).json({ success: false, message: 'Not authorized to view this booking' });
         }
         res.status(200).json({ success: true, data: booking });
@@ -82,23 +82,13 @@ exports.addBooking = async (req, res, next) => {
         //add user Id to req.body
         req.body.user = req.user.id;
 
-        // If checkoutDate provided, compute numOfNights; otherwise expect numOfNights
-        if (req.body.checkoutDate && req.body.bookingDate) {
-            const checkIn = new Date(req.body.bookingDate);
-            const checkOut = new Date(req.body.checkoutDate);
-            const msPerDay = 24 * 60 * 60 * 1000;
-            const nights = Math.round((checkOut - checkIn) / msPerDay);
+        // Validate booking date is not in the past
+        if (req.body.bookingDate) {
+            const bookingDate = new Date(req.body.bookingDate);
             const now = new Date();
             const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            if (checkIn < today) {
+            if (bookingDate < today) {
                 return res.status(400).json({ success: false, message: 'You can only book for now or future.' });
-            }
-            if (checkOut < checkIn) {
-                return res.status(400).json({ success: false, message: 'Check out date cannot be before check in date.' });
-            }
-            // enforce maximum nights rule on server side as well
-            if (nights > 3) {
-                return res.status(400).json({ success: false, message: 'You can only book up to 3 nights.' });
             }
         }
 
@@ -114,6 +104,10 @@ exports.addBooking = async (req, res, next) => {
         });
     } catch (error) {
         console.log(error.stack);
+        // Return validation errors from model
+        if (error.name === 'ValidationError' || error.message.includes('night')) {
+            return res.status(400).json({ success: false, message: error.message });
+        }
         return res.status(500).json({ success: false, message: 'Cannot create Booking' });
     }
 };

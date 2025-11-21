@@ -43,32 +43,24 @@ const GoogleAuthSuccess = ({ setUser }) => {
           // Debug: Check all cookies
           console.log('All cookies:', document.cookie);
 
-          // BEST PRACTICE: Get token from HTTP-only cookie instead of URL
-          // The token is already set by the backend in a secure cookie
-          // We just need to verify it exists
-          let token = getCookie('token');
+          // Get token from HTTP-only cookie (set by backend)
+          const token = getCookie('token');
           
           console.log('Token from cookie:', token ? 'Found (' + token.substring(0, 20) + '...)' : 'Not found');
           
           if (!token) {
-            console.warn('⚠️ No token found in cookie, checking if backend included it (fallback)');
-            // Fallback: check if token was accidentally included in userData
-            if (userData.token) {
-              console.log('✅ Token found in userData (fallback mode)');
-              token = userData.token;
-            } else {
-              console.error('❌ No token found in cookie or userData');
-              console.error('This might be due to:');
-              console.error('1. Cookie not set by backend');
-              console.error('2. SameSite cookie policy blocking');
-              console.error('3. CORS credentials not working');
-              toast.error('Authentication failed. No token received.');
-              navigate('/login');
-              return;
-            }
+            console.error('❌ No token found in cookie');
+            console.error('Possible causes:');
+            console.error('1. Cookie not set by backend');
+            console.error('2. SameSite cookie policy blocking');
+            console.error('3. CORS credentials not enabled');
+            console.error('4. Domain mismatch between frontend/backend');
+            toast.error('Authentication failed. No token received.');
+            navigate('/login');
+            return;
           }
 
-          console.log('✅ Token acquired successfully');
+          console.log('✅ Token acquired from cookie successfully');
 
           // Save token to localStorage for axios interceptor
           // Note: In production, consider using the cookie directly

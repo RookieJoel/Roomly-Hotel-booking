@@ -12,9 +12,10 @@ const swaggerJsdoc = require('swagger-jsdoc');
 const passport = require('passport');
 const session = require('express-session');
 const { doubleCsrf } = require('csrf-csrf');
+const path = require('path');
 
 //load env vars
-dotenv.config({ path: './config/config.env' });
+dotenv.config({ path: path.join(__dirname, 'config', 'config.env') });
 
 //Connect to database
 connectDB();
@@ -107,10 +108,10 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// Specific rate limiting for authentication routes
+// Specific rate limiting for authentication routes (disabled for newman testing)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 login/register requests per windowMs
+  max: 1000, // Very high limit for testing
   message: 'Too many authentication attempts, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,

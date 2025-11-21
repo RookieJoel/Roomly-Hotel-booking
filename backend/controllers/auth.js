@@ -241,28 +241,28 @@ exports.googleAuthCallback = async (req, res) => {
       nodeEnv: process.env.NODE_ENV
     });
 
-    // Build user data (WITH token as fallback)
-    // NOTE: In production with HTTPS, the cookie should work
-    // Including token here as temporary fallback for development
+    // Set token in HTTP-only cookie (primary method)
+    res.cookie('token', token, options);
+    console.log('✅ Cookie set with name: token');
+
+    // Build minimal user data for URL (NO TOKEN - to prevent header size issues)
+    // Token is in HTTP-only cookie - frontend should read from cookie
     const userData = {
       _id: req.user._id,
       name: req.user.name,
       email: req.user.email,
       tel: req.user.tel || null,
-      role: req.user.role || 'user',
-      token: token // Temporary: include token as fallback
+      role: req.user.role || 'user'
+      // NOTE: Token NOT included in URL to prevent "Request header too large" error
+      // Frontend MUST read token from cookie using document.cookie
     };
 
-    // Set token in HTTP-only cookie (primary method)
-    res.cookie('token', token, options);
-    console.log('✅ Cookie set with name: token');
-
-    // Pass user data (with token as fallback) in URL
+    // Pass minimal user data in URL (without token)
     const encoded = encodeURIComponent(JSON.stringify(userData));
     const redirectUrl = `${frontendUrl}/auth/google/callback?googleAuth=true&data=${encoded}`;
     
     console.log('🔄 Redirecting to:', redirectUrl.substring(0, 100) + '...');
-    console.log('⚠️ Note: Token included in URL as fallback (should work via cookie in production)');
+    console.log('✅ Token sent via HTTP-only cookie only (not in URL)');
     
     // Clear OAuth state from session
     if (req.session?.oauthState) {
